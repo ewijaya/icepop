@@ -1,0 +1,28 @@
+ICEPOP (Immune CEll POPulation) is the method for estimating immune cell
+population in the expressed genes. It enable analysis of differentially
+expressed genes (DEGs) or raw expression data. These APIs and scripts will let
+you have a fine grained control on the data analysis lacking in the web
+version. On top of the core immune cell population deconvolution, it allows
+you to download the raw data from NCBI GEO gene expression database,
+normalize, and plot the data using command line interface.
+
+
+
+Installing
+==========
+
+ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ (highly recommended) or 
+`easy_install <https://wiki.python.org/moin/CheeseShopTutorial>`_ (older, but still works fine).
+To obtain the latest stable version into your python path::
+
+    $ pip install --upgrade icepop
+
+You may also opt to use your operating system's package manager; the package
+is typically called ``icepop`` or ``python-icepop``. E.g.::
+
+    $ sudo apt-get install icepop
+
+
+
+
+
