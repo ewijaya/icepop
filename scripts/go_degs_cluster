@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+""" 
+Given differentially expressed genes,
+scripts that performs clustering and then
+calculate the GO enrichment.
+"""
+__author__    = "Edward Wijaya <ewijaya@gmail.com>"
+__copyright__ = "Copyright 2015"
+import csv
+import json
+import argparse
+import sys  
+import os
+this_path = os.path.abspath(__file__)
+package_path = "/".join(this_path.split("/")[0:6])
+sys.path.append(package_path)
+from icepop import input_reader as ir
+from icepop import species_cell_proportion as scp
+from icepop import enumerate_output as eo
+
+
+def main():
+    parser = argparse.ArgumentParser(description='''GO enrichment for
+            clustered DEGs.''')
+    parser.add_argument("filename", nargs='?',help="DEGs file in TSV, CSV or Excel format") 
+    parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
+    parser.add_argument("-k",metavar="",help="number of clusters",type=int,default=20)
+    parser.add_argument("-m","-method",metavar="",help="clustering method (complete, average, ward)",type=str,default='ward')
+    parser.add_argument("-d","-distance",metavar="",help="distance measure (euclidean, manhattan, pearsond)",type=str,default='euclidean')
+    parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
+    parser.add_argument("-p","-pvalue",metavar="",help="p-value lower threshold",type=str,default='1.00')
+    parser.add_argument("-c","-cormeth",metavar="",help="correction method (HOLM_BONFERRONI,BENJAMINI_HOCHBERG,BONFERRONI)",type=str,default='HOLM_BONFERRONI')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in JSON format",type=str,default='outfile.json')
+    parser.add_argument("--immune", help="only show immune GO terms",action="store_false")
+  
+
+    args = parser.parse_args()
+    deg_infile = args.filename
+    species    = args.s
+    out_json   = args.o
+    nof_clust  = args.k
+    cormeth    = args.c
+    organs     = args.g
+    method     = args.m
+    dist       = args.d
+    pvalim     = args.p
+    immune     = args.immune 
+
+    # These two has no effect
+    # But needed cause it uses function that takes that as parameter.
+    gene_count = True    
+    logscale   = False
+
+    foldchange_range=[1.5,2,2.5,3,3.5,4,4.5,5]
+    fcstr = [str(x) for x in foldchange_range]
+    fcstr = ",".join(fcstr)
+
+    # Sanity check
+    if organs != 'no_pref' and species == "human":
+        sys.exit("Human has no organs based proportion data.")
+    else:
+        sys.stderr.write("Generating JSON file for the following fold changes:\n")
+        sys.stderr.write(fcstr +  "\n")    
+        sys.stderr.write("Number of cluster: " +  str(nof_clust) +  "\n")    
+        sys.stderr.write("Organs: " +  organs +  "\n")    
+        sys.stderr.write("Clustering method: " +  method +  "\n")    
+        sys.stderr.write("Distance measure: "  +  str(dist) +  "\n")    
+        sys.stderr.write("Output file: " +  out_json +  "\n")    
+
+
+    
+    indf            = ir.read_file(deg_infile, mode="DEG")
+
+    
+    # cellpop_df    = scp.get_prop(species=species,mode="pandas_df")
+
+    cellpop_df = None
+    if organs == 'no_pref':
+        cellpop_df = ir.read_hdf(species=species)
+    else:
+        cellpop_df = ir.read_hdf(species=species,organs=True)
+        organ_list = list(cellpop_df.columns.levels[0])
+        
+        if organs not in organ_list:
+            organlstr = ",".join(organ_list)
+            sys.exit("organs should be in this list: " + organlstr + "\n")
+            sys.exit("now *no_pref* instead \n")
+
+        organlist = cellpop_df.columns.values.tolist()
+        cellpop_df = scp.choose_organ(cellpop_df, organs)
+
+    eo.enumerate_geneclust_go_output(cellpop_df, indf, fc_range = foldchange_range, \
+                        method=method, k=nof_clust, dist=dist,
+                        outfilename = out_json,  gene_count=gene_count,
+                        logscale=logscale,
+                        species=species,pvalim=pvalim,cormeth=cormeth,immune=immune 
+                        )
+
+
+
+
+if __name__ == '__main__':
+    main()
