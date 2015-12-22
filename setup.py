@@ -9,25 +9,19 @@ __copyright__ = "Copyright 2015"
 from distutils.core import setup
 
 setup(name='icepop',
-      version='0.1',
+      #major.minor.release.build
+      version='1.0.0.0',
       author='Edward Wijaya',
-      maintainer_email= 'ewijaya@gmail.com',
+      license='MIT License',
+      platforms=['linux','macosx'],
+      author_email= 'ewijaya@gmail.com',
+      url = 'https://github.com/ewijaya/icepop',
+      keywords = ['bioinformatics','immunology','gene expression', 'microarray', 'reads'],
       install_requires=['pandas',
                         'sklearn',
                         'matplotlib',
                         'scipy',
                         'GEOparse',
-                        'seaborn'
-          
-          ],
-      package_data = {'proportion':[
-                       'proportion_data/immgen_mouse.h5',
-                       'proportion_data/iris_human.h5',
-                       'proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv',
-                       'proportion_data/IRIS.csv'
-                       ]},
+                        'seaborn' ],
 
-      scripts=[ 'scripts/icepop_degs',
-                'scripts/go_degs_cluster',
-                'scripts/icepop_degs_cluster' ]
 )
