@@ -7,7 +7,6 @@ you to download the raw data from NCBI GEO gene expression database,
 normalize, and plot the data using command line interface.
 
 
-
 Installing
 ==========
 
@@ -24,5 +23,9 @@ is typically called ``icepop`` or ``python-icepop``. E.g.::
 
 
 
-
+Alternative access 
+==================
+* `Web Application <https://sysimg.ifrec.osaka-u.ac.jp/icepop/>`_.
+* `PyPi <https://pypi.python.org/pypi/icepop/>`_.
+* `API documentation <https://sysimg.ifrec.osaka-u.ac.jp/icepop/static//apidoc/html/index.html>`_
 
