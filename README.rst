@@ -11,10 +11,17 @@ Installation
 ============
 
 ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ (highly recommended) or 
-`easy_install <https://wiki.python.org/moin/CheeseShopTutorial>`_ (older, but still works fine).
+`easy_install <https://wiki.python.org/moin/CheeseShopTutorial>`_ (older, but still works fine)::
+
+
+    $ pip install icepop
+
+
 To obtain the latest stable version into your python path::
 
-    $ pip install --upgrade icepop
+    $ pip install icepop==version
+
+Where version numbering may looks like ``1.0.0.15``.
 
 You may also opt to use your operating system's package manager; the package
 is typically called ``icepop`` or ``python-icepop``. E.g.::

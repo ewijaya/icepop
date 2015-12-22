@@ -11,9 +11,6 @@ import argparse
 import sys  
 import os
 import pandas as pd 
-this_path = os.path.abspath(__file__)
-package_path = "/".join(this_path.split("/")[0:6])
-sys.path.append(package_path)
 from icepop import input_reader as ir
 from icepop import species_cell_proportion as scp
 from icepop import deconvolution as dc
