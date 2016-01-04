@@ -4,7 +4,7 @@ Functions for calculating cell population.
 """
 __author__    = "Edward Wijaya <ewijaya@gmail.com>"
 __copyright__ = "Copyright 2015"
-
+import json
 import numpy as np
 import sys
 import pandas as pd
@@ -38,12 +38,12 @@ def deg_cellpopscore_df(cellpopdf=None, degdf=None, fclim=None, gene_count=False
     # print cellpopdf.head()
     sample_names = degdf.columns.values.tolist()
     sample_names = sample_names[2:]
-
     degdf.columns = ["probe","Genes"] + sample_names 
 
     
 
     all_dfs = []
+    nof_genes_dict = {}
     for i, sample in enumerate(sample_names):
         unwanted_samples = list(set(sample_names) - set([sample]))
         sample_df = degdf[degdf.columns.difference(unwanted_samples)]
@@ -52,10 +52,12 @@ def deg_cellpopscore_df(cellpopdf=None, degdf=None, fclim=None, gene_count=False
         # it can be fitted with cellpopdf
         # sample_df.columns = ["probe","Genes", sample]
         sample_df = sample_df[["Genes", sample]]
+
         
         sample_df = sample_df[ sample_df[sample] >=  fclim ]
         sample_df["Genes"] = sample_df["Genes"].str.strip()
-        #print sample_df.shape
+        nof_genes =  sample_df.shape[0]
+        nof_genes_dict[sample] = nof_genes
 
         # prune out sample with FC < 0 
         if logscale:
@@ -72,8 +74,7 @@ def deg_cellpopscore_df(cellpopdf=None, degdf=None, fclim=None, gene_count=False
     
 
     final_df = pd.concat(all_dfs,axis=1).fillna(0)
-    #print final_df
-    return final_df
+    return nof_genes_dict, final_df
     
 
 def get_population_values(cellpop_df=None, sample_df=None, input_gene_count=None):
@@ -135,12 +136,13 @@ def get_population_values(cellpop_df=None, sample_df=None, input_gene_count=None
 def main():
     """Used for testing this file. """ 
     cellpop_df = scp.get_prop(species="mouse",mode="pandas_df") 
-    deg_inputfile="../testing/input_type1_degs.tsv"
+    deg_inputfile="../testing/degs_based_analysis/input_type1_degs.tsv"
     indf = ir.read_file(deg_inputfile, mode="DEG")
-    print indf.head()
-    cpop_score_df = deg_cellpopscore_df(cellpopdf=cellpop_df, degdf=indf, fclim=0, gene_count=False, \
+    # print indf.head()
+    nof_genesdict, cpop_score_df = deg_cellpopscore_df(cellpopdf=cellpop_df, degdf=indf, fclim=1.5, gene_count=False, \
             logscale=False)
-    print cpop_score_df.head()
+    # print json.dumps(nof_genesdict, indent=4)
+    # print cpop_score_df.head()
 
 
 if __name__ == '__main__':

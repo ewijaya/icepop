@@ -75,7 +75,6 @@ def enumerate_geneclust_go_output(cellpopdf, degdf, gene_count=False, \
     outerdict = defaultdict(list)
     go_lol = []
     for fc_lim in fc_range:
-            
 
         sample_names = degdf.columns.values.tolist()
         sample_names = sample_names[2:]
@@ -253,18 +252,21 @@ def enumerate_output(cellpopdf, degdf, gene_count=False, \
     final = []
     for fc_lim in fc_range:
         # sys.stderr.write("EO:" +  str(gene_count) + "\n")
-        cpop_score_df = cp.deg_cellpopscore_df(cellpopdf, degdf, fclim=fc_lim, \
+        nof_genes_dict, cpop_score_df = cp.deg_cellpopscore_df(cellpopdf, degdf, fclim=fc_lim, \
                             gene_count=gene_count, logscale=False)
         mdict = cpop_score_df.to_dict()
         outlist = []
         for sample, cellpopvals in mdict.iteritems():
             celltypelist = []
+            nof_genes = nof_genes_dict[sample]
+
             
             # sort by cell types
             od = collections.OrderedDict(sorted(cellpopvals.items()))
             for celltype, val in od.iteritems():
                 celltypelist.append({"celltype":celltype,"score":val})
-            outlist.append({"values":celltypelist, "sample": sample})
+            outlist.append({"values":celltypelist, "sample": sample,
+                "nof_genes": nof_genes})
         
         
         #print json.dumps(outlist, indent=4)
@@ -280,19 +282,19 @@ def main():
     """
     Used for testing this file.
     """
-    deg_infile    = "../../testing/degs_based_analysis/input_type1_degs.tsv"
+    deg_infile    = "../testing/degs_based_analysis/input_type1_degs.tsv"
     cellpop_df    = scp.get_prop(species="mouse",mode="pandas_df")
     indf          = ir.read_file(deg_infile, mode="DEG") 
     foldchange_range =[2,2.5,3,3.5,4,4.5,5]
-    out_json = "../../testing/degs_based_analysis/output_type1_degs.json"
-    # enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
-    #         outfilename = out_json,  gene_count=True, logscale=False)
+    out_json = "../testing/degs_based_analysis/output_type1_degs.json"
+    enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
+            outfilename = out_json,  gene_count=True, logscale=False)
 
-    enumerate_geneclust_go_output(cellpop_df, indf, gene_count=False, \
-            outfilename=out_json, k=40, logscale=None,\
-            fc_range=foldchange_range,\
-            method="ward", dist="euclidean",\
-            species="mouse",pvalim=1,cormeth=None,immune=True,verbose=True)
+    # enumerate_geneclust_go_output(cellpop_df, indf, gene_count=False, \
+    #         outfilename=out_json, k=40, logscale=None,\
+    #         fc_range=foldchange_range,\
+    #         method="ward", dist="euclidean",\
+    #         species="mouse",pvalim=1,cormeth=None,immune=True,verbose=True)
 
     
 

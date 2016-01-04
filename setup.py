@@ -10,8 +10,8 @@ from distutils.core import setup
 import warnings
 
 setup(name='icepop',
-      #major.minor.release.build
-      version='1.0.0.16',
+      #version.release.build
+      version='1.3.0',
       author='Edward Wijaya',
       license='MIT License',
       platforms=['linux','macosx'],
