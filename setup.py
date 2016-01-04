@@ -11,7 +11,7 @@ import warnings
 
 setup(name='icepop',
       #major.minor.release.build
-      version='1.0.0.15',
+      version='1.0.0.16',
       author='Edward Wijaya',
       license='MIT License',
       platforms=['linux','macosx'],

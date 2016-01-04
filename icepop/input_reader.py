@@ -10,6 +10,7 @@ __copyright__ = "Copyright 2015"
 import pandas as pd
 import sys
 import os
+import os.path
 
 def read_hdf_from_file(infile=None):
     """
@@ -37,18 +38,18 @@ def read_hdf(species=None,organs=False):
 
 
     tmp = os.path.abspath(__file__)
-    package_path = "/".join(tmp.split("/")[0:7])
+    package_path = os.path.dirname(tmp)
 
     if species=='mouse' and organs:
-        infile = os.path.join(package_path, "icepop/proportion_data/immgen_mouse_organ.h5")
+        infile = os.path.join(package_path, "proportion_data/immgen_mouse_organ.h5")
         out_df = pd.read_hdf(infile,'fixed')
         return out_df
     elif species=='human' and organs:
         sys.exit("H. Sapiens data has no organs option")
     else:
-        infile = os.path.join(package_path, "icepop/proportion_data/immgen_mouse.h5")
+        infile = os.path.join(package_path, "proportion_data/immgen_mouse.h5")
         if species=="human":
-            infile = os.path.join(package_path,"icepop/proportion_data/iris_human.h5")
+            infile = os.path.join(package_path,"proportion_data/iris_human.h5")
         out_df = pd.read_hdf(infile,'fixed')
         return out_df
 
@@ -64,17 +65,17 @@ def read_hdf_expr(species=None,organs=False):
     # With __file__ we set the relative path where we can
     # access the proportion data, relative to this file.
     tmp = os.path.abspath(__file__)
-    package_path = "/".join(tmp.split("/")[0:7])
+    package_path = os.path.dirname(tmp)
 
 
     if species=='mouse' and organs:
-        infile = os.path.join(package_path, "icepop/proportion_data/immgen_mouse_expr_organ.h5")
+        infile = os.path.join(package_path, "proportion_data/immgen_mouse_expr_organ.h5")
         out_df = read_hdf_from_file(infile=infile)
         return out_df
     else:
-        infile = os.path.join(package_path, "icepop/proportion_data/immgen_mouse_expr.h5")
+        infile = os.path.join(package_path, "proportion_data/immgen_mouse_expr.h5")
         if species=="human":
-            infile = os.path.join(package_path,"icepop/proportion_data/iris_human_expr.h5")
+            infile = os.path.join(package_path,"proportion_data/iris_human_expr.h5")
         out_df = pd.read_hdf(infile,'fixed')
         return out_df
 
