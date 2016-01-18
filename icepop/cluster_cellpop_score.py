@@ -55,7 +55,7 @@ def cluster_cellpop_score(cellpopdf=None, degdf=None, fclim=None,\
         tmp_degdf_clust.insert(0,"ClusterID",clustid)
         allclusters_degs_df.append(tmp_degdf_clust)
 
-        cpop_score_df = cp.deg_cellpopscore_df(cellpopdf, degdf_clust, \
+        _, cpop_score_df = cp.deg_cellpopscore_df(cellpopdf, degdf_clust, \
                 fclim=fclim, gene_count=False, logscale=False)
 
         # Here we scale across cell type, using Z-score

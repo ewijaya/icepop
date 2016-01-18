@@ -11,8 +11,9 @@ import warnings
 
 setup(name='icepop',
       #version.release.build
-      version='1.3.0',
+      version='1.3.5',
       author='Edward Wijaya',
+      description='Python package for analysing immune cell population in expressed genes',
       license='MIT License',
       platforms=['linux','macosx'],
       author_email= 'ewijaya@gmail.com',

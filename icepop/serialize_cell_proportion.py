@@ -44,16 +44,18 @@ def make_immgen_expr(out_type="HDF5", group_by="organs"):
         # Only IMMGEN contain organ
         if group_by == "organ":
             df            = ig.ComputeAverageByOrgans()
-            hdf_output_organ = "../proportion_data/immgen_mouse_expr_organ.h5"
+
+            hdf_output_organ = "./proportion_data/immgen_mouse_expr_organ.h5"
             df.to_hdf(hdf_output_organ, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
         else:
             ig_expr        = ig.ComputeAverage()
             ig_expr_dict   = ig_expr[0]
             df = pd.DataFrame.from_dict(ig_expr_dict).fillna(0).T
+
             df = df.convert_objects(convert_numeric=True)
             df.index.name = "Genes"
             df.reset_index(inplace=True)
-            hdf_output = "../proportion_data/immgen_mouse_expr.h5"
+            hdf_output = "./proportion_data/immgen_mouse_expr.h5"
             df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
     else:
         pass
@@ -65,23 +67,32 @@ def make_immgen_weight(out_type="HDF5",group_by=None):
     Now we implement for HDF5 as Pandas table
     and Pickle as nested dictionary.
     """
-    cell_prop_file = '../proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv'
+    cell_prop_file = './proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv'
     ig = cellprop.ImmGen(cell_prop_file)
     igweight_dict, celltype_list  = ig.ComputePercentageWeight()
 
     if out_type =="HDF5":
         if group_by == 'organ':
             df            = ig.ComputeAverageByOrgans(weighted=True)
-            hdf_output = "../proportion_data/immgen_mouse_organ.h5"
+            df = (df/df.sum()) * 100
+            df = df.fillna(0)
+            hdf_output = "./proportion_data/immgen_mouse_organ.h5"
             df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
         else:
             df = pd.DataFrame.from_dict(igweight_dict).fillna(0).T
+
+            # Normalize column so that it sums to 1
+            # This makes the interpretation easier. 
+            # So that when the fold change is for all genes it won't
+            # the histogram will be flat.
+            df = (df/df.sum()) * 100
+
             df.index.name = "Genes"
             df.reset_index(inplace=True)
-            hdf_output = "../proportion_data/immgen_mouse.h5"
+            hdf_output = "./proportion_data/immgen_mouse.h5"
             df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
     elif out_type == "pickle":
-        pickle_output = "../proportion_data/immgen_mouse.pkl"
+        pickle_output = "./proportion_data/immgen_mouse.pkl"
         output = open(pickle_output,"wb")
         pickle.dump(igweight_dict,output)
         output.close()
@@ -94,11 +105,18 @@ def make_iris(out_type="HDF5"):
     Now we implement for HDF5 as Pandas table
     and Pickle as nested dictionary.
     """
-    cell_prop_file = '../proportion_data/IRIS.csv'
+    cell_prop_file = './proportion_data/IRIS.csv'
     iris = cellprop.Iris(cell_prop_file)
     irisweight_df, celltype_list  = iris.ComputePercentageWeight()
+    print irisweight_df.head()
+
+    irisweight_df.set_index("Genes",inplace=True)
+    irisweight_df = (irisweight_df/irisweight_df.sum()) * 100
+    irisweight_df.index.name="Genes"
+    irisweight_df.reset_index(inplace=True)
+
     if out_type=="HDF5":
-        hdf_output = "../proportion_data/iris_human.h5"
+        hdf_output = "./proportion_data/iris_human.h5"
         irisweight_df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
 
         
@@ -108,13 +126,13 @@ def make_iris_expr(out_type="HDF5"):
     Now we implement for HDF5 as Pandas table
     and Pickle as nested dictionary.
     """
-    cell_prop_file = '../proportion_data/IRIS.csv'
+    cell_prop_file = './proportion_data/IRIS.csv'
     iris = cellprop.Iris(cell_prop_file)
     iris_expr_df  = iris.ComputeAverage()
     iris_expr_df  = iris_expr_df.reset_index()
     iris_expr_df.drop('Probes',axis=1,inplace=True)
     if out_type=="HDF5":
-        hdf_output = "../proportion_data/iris_human_expr.h5"
+        hdf_output = "./proportion_data/iris_human_expr.h5"
         iris_expr_df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
     
 
@@ -122,8 +140,10 @@ def main():
     """Make the actual HDF files for both ImmGen and IRIS."""
     # make_iris_expr(out_type="HDF5")
     # make_immgen_expr(out_type="HDF5",group_by="organ")
+
     # make_immgen_weight(out_type="HDF5")
     make_immgen_weight(out_type="HDF5",group_by="organ")
+
     # make_iris(out_type="HDF5")
     # make_immgen(out_type="pickle")
     
