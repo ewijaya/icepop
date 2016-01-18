@@ -81,10 +81,10 @@ def make_immgen_weight(out_type="HDF5",group_by=None):
         else:
             df = pd.DataFrame.from_dict(igweight_dict).fillna(0).T
 
-            # Normalize column so that it sums to 1
+            # Normalize column so that it sums to 1.
             # This makes the interpretation easier. 
-            # So that when the fold change is for all genes it won't
-            # the histogram will be flat.
+            # So that when the fold change is constant for all genes 
+            # the histogram will also be flat.
             df = (df/df.sum()) * 100
 
             df.index.name = "Genes"
@@ -108,7 +108,6 @@ def make_iris(out_type="HDF5"):
     cell_prop_file = './proportion_data/IRIS.csv'
     iris = cellprop.Iris(cell_prop_file)
     irisweight_df, celltype_list  = iris.ComputePercentageWeight()
-    print irisweight_df.head()
 
     irisweight_df.set_index("Genes",inplace=True)
     irisweight_df = (irisweight_df/irisweight_df.sum()) * 100
