@@ -51,7 +51,7 @@ for i in range(len(tableau20)):
     tableau20[i] = (r / 255., g / 255., b / 255.)   
 
 
-def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2):
+def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2, y_thres=None):
     """
     Make barplot. All in one figure. Not very pretty.
     Based on `Pandas method
@@ -65,6 +65,7 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2):
         Image file type is defined automatically from output file extension.
     """
 
+
     toplot_df = indf
     xlabels =  toplot_df.index.values
     barplot   = toplot_df.plot(kind="bar", figsize=(17,17), \
@@ -73,10 +74,15 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2):
                           fontsize = 30,\
                           legend=False,
                           ylim = (ymin,ymax),
-                          subplots=False)
+                          subplots=False,
+                          zorder=2)
 
     ax = plt.gca()
     ax.set_xticklabels(xlabels, rotation=30, ha='right')
+
+    if y_thres:
+        plt.axhline(y=y_thres, linewidth=2.0, color='r',zorder=1)
+        
     plt.xlabel("")
     plt.ylabel("Score", fontsize=30, fontweight="bold")
     fig = barplot.get_figure()

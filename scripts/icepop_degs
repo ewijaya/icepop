@@ -2,6 +2,8 @@
 """ 
 Scripts for calculating cell population
 given differentially expressed genes.
+By default it enumerates result for various fold change
+threshold. Otherwise user can specify single fold change
 """
 __author__    = "Edward Wijaya <ewijaya@gmail.com>"
 __copyright__ = "Copyright 2015"
@@ -10,9 +12,22 @@ import json
 import argparse
 import sys  
 import os
+# To be removed later
+# sys.path.insert(0,"/Users/ewijaya-macmini-ifrec/Various_Projects/CellPopulation_Framework_in_making/icepop")
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+from icepop import draw_cellpop as dc
 from icepop import input_reader as ir
+from icepop import cellpop_score as cp
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo
+from icepop import utils
+
+
+def float_or_str(value):
+    try:
+        return float(value)
+    except:
+        return value
 
 
 def main():
@@ -21,17 +36,32 @@ def main():
     parser.add_argument("filename", nargs='?',help="DEGs file in TSV, CSV or Excel format") 
     parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
     parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
-    parser.add_argument("-o","-outfile",metavar="",help="output file in JSON format",type=str,default='outfile.json')
+    parser.add_argument("-cv_organ",metavar="",help="organs ('no_pref','ln', 'lv','sp')",type=str,default='no_pref')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in stdout, JSON, PNG/JPG/SVG format",type=str,default='outfile.json')
     parser.add_argument("--gene_count", help="normalized score by gene_count",action="store_true")
     parser.add_argument("--logscale", help="perform log scale on FC or expression",action="store_true")
+    parser.add_argument("--verbose", help="verbose output",action="store_true")
+    parser.add_argument("-fclim", help="specify single fold change threshold",type=float_or_str,default="none")
 
     args = parser.parse_args()
     deg_infile = args.filename
     species    = args.s
-    out_json   = args.o
+    outfile    = args.o
     organs     = args.g
     gene_count = args.gene_count
     logscale   = args.logscale
+    fc_lim     = args.fclim
+    cv_filt_organ     = args.cv_organ
+    verbose    = args.verbose
+
+
+    if outfile == '':
+        outfile = None
+        
+    base, suff = None, None
+    if "." in outfile:
+        tmp_fnames = os.path.basename(outfile)
+        base, suff = tmp_fnames.split(".")
 
     foldchange_range=[1.5,2,2.5,3,3.5,4,4.5,5]
     fcstr = [str(x) for x in foldchange_range]
@@ -40,17 +70,19 @@ def main():
     # Sanity check
     if organs != 'no_pref' and species == "human":
         sys.exit("Human has no organs based proportion data.")
-    else:
+    elif verbose:
         sys.stderr.write("Generating JSON file for the following fold changes:\n")
         sys.stderr.write(fcstr +  "\n")    
-        sys.stderr.write("Output file: " +  out_json +  "\n")    
+        sys.stderr.write("Species: " +  str(species) +  "\n")    
+        sys.stderr.write("Output file: " +  str(out_json) +  "\n")    
         sys.stderr.write("Gene count: " +  str(gene_count) +  "\n")    
-
+        sys.stderr.write("Logscale: " +  str(logscale) +  "\n")    
 
     
     indf            = ir.read_file(deg_infile, mode="DEG")
+    if cv_filt_organ != 'no_pref':
+        indf            = utils.cv_filter(indf, organ=cv_filt_organ)
 
-    # cellpop_df    = scp.get_prop(species=species,mode="pandas_df")
 
     cellpop_df = None
     if organs == 'no_pref':
@@ -67,13 +99,40 @@ def main():
         organlist = cellpop_df.columns.values.tolist()
         cellpop_df = scp.choose_organ(cellpop_df, organs)
 
-    # print cellpop_df.head()
+    # print indf.head()
 
-    eo.enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
-                        outfilename = out_json,  gene_count=gene_count,
-                        logscale=logscale)
+    if fc_lim == 'none' and suff == 'json':
+        print foldchange_range
+        # This full enumeration is mainly used for web app
+        eo.enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
+                            outfilename = outfile,  gene_count=gene_count,
+                            logscale=logscale)
 
+    else:
+        sample_ct_generank_dict, cpop_score_df, thres_dict, gene_x_ctypedf = cp.deg_cellpopscore_generank(cellpop_df,indf, fclim=fc_lim,gene_count=False,logscale=False,cpop_thres='q1')
+        sample_name = cpop_score_df.columns.values.tolist()[0]
+        cpop_thres = thres_dict[sample_name]
 
+        # nof_genes_dict, cpop_score_df = cp.deg_cellpopscore_df(cellpop_df, indf, fclim=fc_lim, \
+        #                     gene_count=gene_count, logscale=logscale)
+        # print cpop_score_df
+        if suff == "json":
+            sys.stderr.write("JSON output only available when -fclim is off.\n")
+        elif suff == "tsv":
+            cpop_score_df.index.names = ['Cell_type']
+            cpop_score_df.reset_index(inplace=True)
+            cpop_score_df.to_csv(outfile,sep="\t",index=False,float_format='%.3f')
+        elif suff == "xlsx" or  suff == 'xls':
+            cpop_score_df.index.names = ['Cell_type']
+            cpop_score_df.reset_index(inplace=True)
+            cpop_score_df.to_excel(outfile,index=False,float_format='%.3f')
+        elif suff in ['svg','jpg','png']:
+            dc.bar_plot(cpop_score_df, outfile=outfile, title=sample_name,ymin=0, ymax=0.5, y_thres = cpop_thres )
+        elif outfile == 'stdout':
+            print  cpop_score_df
+        else:
+            sys.stderr.write("No output is created.\n")
+            sys.stderr.write("Please use one of these suffixes in the output file name: svg, jpg, png, tsv, xlsx, xls.\n")
 
 
 if __name__ == '__main__':

@@ -1,0 +1,548 @@
+#!/usr/bin/env python
+""" 
+Scripts for calculating cell population
+given differentially expressed genes.
+By default it enumerates result for various fold change
+threshold. Otherwise user can specify single fold change
+
+In this the gene is simply distributed equally, over 
+the circle.
+
+"""
+import csv
+import json
+import argparse
+import re
+import sys  
+import shutil
+import numpy as np
+from collections import defaultdict
+import os
+import pandas as pd
+# To be removed later
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+# sys.path.insert(0,"/Users/ewijaya-macmini-ifrec/Various_Projects/CellPopulation_Framework_in_making/icepop")
+from icepop import input_reader as ir
+from icepop import cellpop_score as cp
+from icepop import targetmine_query_urllib as tgm
+from icepop import species_cell_proportion as scp
+from icepop import enumerate_output as eo
+from icepop import utils 
+from icepop import targetmine_query_urllib as tgm
+
+def float_or_str(value):
+    try:
+        return float(value)
+    except:
+        return value
+
+def main():
+    parser = argparse.ArgumentParser(description='''Cell population score for
+            differentially expressed genes.''')
+    parser.add_argument("filename", nargs='?',help="DEGs file in TSV, CSV or Excel format") 
+    parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
+    parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
+    parser.add_argument("-cv_organ",metavar="",help="CV filter organs ('no_pref','ln', 'lv','sp')",type=str,default='no_pref')
+    parser.add_argument("-p","-pvalue",metavar="",help="p-value lower threshold",type=str,default='1.00')
+    parser.add_argument("-c","-cormeth",metavar="",help="correction method (HOLM_BONFERRONI,BENJAMINI_HOCHBERG,BONFERRONI)",type=str,default='HOLM_BONFERRONI')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in JSON format",type=str,default='outfile.json')
+    parser.add_argument("-fclim", help="specify single fold change threshold",type=float_or_str,default="none")
+    parser.add_argument("-circos_dir",metavar="",help="directory to store circos files, please use absolute path",type=str)
+    parser.add_argument("--gene_count", help="normalized score by gene_count",action="store_true")
+    parser.add_argument("--logscale", help="perform log scale on FC or expression",action="store_true")
+    parser.add_argument("--go", help="perform GO (gene ontology) analysis for every cell type in sample",action="store_true")
+    parser.add_argument("--verbose", help="verbose output",action="store_true")
+
+    args = parser.parse_args()
+    deg_infile = args.filename
+    species    = args.s
+    cormeth    = args.c
+    out_json   = args.o
+    organs     = args.g
+    cv_filt_organ     = args.cv_organ
+    gene_count = args.gene_count
+    logscale   = args.logscale
+    fc_lim     = args.fclim
+    pvalim     = args.p
+    circos_dir = args.circos_dir
+    verbose    = args.verbose
+    go         = args.go
+
+    # print species
+
+    if out_json == '':
+        out_json = None
+        
+    # Sanity check
+    if organs != 'no_pref' and species == "human":
+        sys.exit("Human has no organs based proportion data.")
+    elif verbose:
+        sys.stderr.write("Generating JSON file for the following fold changes:\n")
+        sys.stderr.write("Species: " +  str(species) +  "\n")    
+        sys.stderr.write("Output file: " +  str(out_json) +  "\n")    
+        sys.stderr.write("Gene count: " +  str(gene_count) +  "\n")    
+
+    
+    indf            = ir.read_file(deg_infile, mode="DEG")
+    colnames = indf.columns.values.tolist()
+    prgenes  = colnames[0:2]
+    samples  = colnames[2:]
+
+
+    cellpop_df = None
+    if organs == 'no_pref':
+        cellpop_df = ir.read_hdf(species=species)
+    else:
+        cellpop_df = ir.read_hdf(species=species,organs=True)
+        organ_list = list(cellpop_df.columns.levels[0])
+        
+        if organs not in organ_list:
+            organlstr = ",".join(organ_list)
+            sys.exit("organs should be in this list: " + organlstr + "\n")
+            sys.exit("now *no_pref* instead \n")
+
+        organlist = cellpop_df.columns.values.tolist()
+        cellpop_df = scp.choose_organ(cellpop_df, organs)
+
+    sys.stderr.write("Making directory: " + circos_dir + "\n")
+    
+    indf            = ir.read_file(deg_infile, mode="DEG")
+    
+    colnames = indf.columns.values.tolist()
+    samples  = colnames[2:]
+    prgenes  = ["ID_REF","Genes"]
+    indf.columns = prgenes + samples 
+    cellpop_df = ir.read_hdf(species=species)
+    
+    #--------------------------------------------------
+    #  CV Filter INDF
+    #--------------------------------------------------
+    allnindf = []
+    for indfsample in samples:
+        # indf_organ = indfsample.split(".")[-1]
+        # indf_organ = indf_organ.lower()
+
+        new_indf = indf[prgenes + [indfsample]]
+        if cv_filt_organ != 'no_pref':
+            new_indf = utils.cv_filter(new_indf,organ=cv_filt_organ)
+            # print  "Klk1" in list(new_indf["Genes"])
+
+        allnindf.append(new_indf)
+
+        
+    merged_nindf = reduce(lambda ldf, rdf: pd.merge(ldf,rdf, on=prgenes, how='outer'), allnindf).fillna(0)
+    indf = merged_nindf
+
+    #--------------------------------------------------
+    # Make data for plotting
+    #--------------------------------------------------
+
+    sample_ct_generank_dict, cpop_score_df, thres_dict, gene_x_ctypedf = cp.deg_cellpopscore_generank(cellpop_df, indf, fclim=fc_lim, \
+                        gene_count=False, \
+                        logscale=False,cpop_thres='q1std')
+
+    sample_list = cpop_score_df.columns.values.tolist()
+
+    #--------------------------------------------------
+    # Get the list of cell type that pass threshold 
+    #-------------------------------------------------- 
+    sample_thres_filtered_ct_dict = defaultdict(list)
+    for sampm, sampthr in thres_dict.iteritems():
+        ntdf = cpop_score_df[cpop_score_df[sampm]> sampthr]
+        filtered_genes =  list(ntdf.index.values)
+        sample_thres_filtered_ct_dict[sampm] = filtered_genes
+
+        
+    #--------------------------------------------------
+    # Get top 100 genes 
+    #-------------------------------------------------- 
+    sel_aoshi_gene_dict = utils.get_sample_gene_list(genectype_df=gene_x_ctypedf)
+
+    #--------------------------------------------------
+    # Prepare circos directory
+    #-------------------------------------------------- 
+    circos_data_dir = circos_dir + "/data"
+
+    if not os.path.exists(circos_dir):
+        sys.stderr.write("Make directory: " + circos_dir + "\n")
+        os.makedirs(circos_dir)
+
+    # Make data dir
+    if not os.path.exists(circos_data_dir):
+        sys.stderr.write("Make data directory: " + circos_data_dir + "\n")
+        os.makedirs(circos_data_dir)
+
+
+    # Desired Circos radius.
+    circle_radius = 10000
+
+
+
+    #--------------------------------------------------
+    # GO for top-100 genes 
+    # This is not shown in circos (yet), but as text file
+    #--------------------------------------------------
+
+    print circos_dir
+    targetmine_file = circos_dir + "/targetmine.json"
+
+    if go:
+        all_gos = []
+        done_term = {}
+        for go_smpl, go_ctgl in sel_aoshi_gene_dict.iteritems():
+            for go_ct, go_gl in go_ctgl.iteritems():
+                genelist_str =  ",".join(go_gl)
+                for vals in tgm.get_tgm_data(genelist_str,immune=True, species=species, \
+                        useSymbol="true",pvalim=0.5,cormeth='HOLM_BONFERRONI'):
+                    go_term = vals[1]
+                    smpl_term = go_smpl + " " + go_term
+                    out = [go_smpl, go_ct ] +  list(vals)[1:]
+
+                    all_gos.append(out)
+                    if smpl_term in done_term: continue
+                    # outstr = "\t".join(out)
+
+                    done_term[smpl_term] = 1
+
+        # write GO for cell types to JSON
+        with open(targetmine_file,'w') as jsonout:
+            json.dump(all_gos, jsonout, indent=4)
+
+
+
+
+
+    #--------------------------------------------------
+    # Copy etc/conf file  
+    #-------------------------------------------------- 
+    tmp_path = os.path.abspath(__file__)
+    package_path = os.path.dirname(tmp_path)
+    pack_paths = package_path.split("/")[0:-1]
+    package_path = "/".join(pack_paths) + "/icepop/"
+    circos_source_etcdir = package_path + "circos_conf/etc"   
+    circos_target_etcdir = circos_dir + "/etc" 
+            
+    # Make circos_target_data dir
+    if os.path.exists(circos_target_etcdir):
+        shutil.rmtree(circos_target_etcdir)
+        os.makedirs(circos_target_etcdir)
+        # print circos_source_etcdir, circos_target_etcdir
+        utils.copytree(circos_source_etcdir, circos_target_etcdir)
+    else:
+        os.makedirs(circos_target_etcdir)
+        utils.copytree(circos_source_etcdir, circos_target_etcdir)
+
+    #--------------------------------------------------
+    # Make result directory 
+    #-------------------------------------------------- 
+    circos_results_dir = circos_dir + "/results"
+    if not os.path.exists(circos_results_dir):
+        sys.stderr.write("Make results directory: " + circos_results_dir + "\n")
+        os.makedirs(circos_results_dir)
+
+
+    #--------------------------------------------------
+    #  Calculate proportion of Karyotype
+    #  It should be based on gene count, so uniformly spread  over all circle
+    #-------------------------------------------------- 
+    allkar_gene_count_dict = defaultdict(list)
+    allkar_ct_gene_count_dict = defaultdict(lambda: defaultdict(list))
+    allkar_ct_gene_list_dict = defaultdict(lambda: defaultdict(list))
+    total_allkar_gene_count = 0
+    for kar_sample in sample_list:
+        if kar_sample in sel_aoshi_gene_dict:
+            kar_samp_ct_dict = sel_aoshi_gene_dict[kar_sample]
+            sample_genes = []
+            for kar_ct, kar_ct_genes in kar_samp_ct_dict.iteritems():
+
+                # The count must be for the cell type that
+                # already pass the threshold
+                if kar_ct in sample_thres_filtered_ct_dict[kar_sample]:
+                    sample_genes += kar_ct_genes
+                    sample_ct_gene_count = len(kar_ct_genes)
+                    allkar_ct_gene_count_dict[kar_sample][kar_ct] = sample_ct_gene_count
+                    allkar_ct_gene_list_dict[kar_sample][kar_ct] = kar_ct_genes
+
+            nof_samp_genes = len(sample_genes)
+            # print kar_sample, nof_samp_genes
+            total_allkar_gene_count += nof_samp_genes
+            allkar_gene_count_dict[kar_sample] = nof_samp_genes 
+
+
+    allkar_weight_dict = {}
+    allkar_ct_weight_dict = defaultdict(dict)
+    for ksmp, kcount in allkar_gene_count_dict.iteritems():
+        ksmp_weight = kcount / (total_allkar_gene_count + 0.000)
+        allkar_weight_dict[ksmp] = ksmp_weight
+
+        ctcount_dict = allkar_ct_gene_count_dict[ksmp]
+        for ctname, ctgcount in ctcount_dict.iteritems():
+            ksmp_ct_weight = ctgcount / (total_allkar_gene_count + 0.000)
+            allkar_ct_weight_dict[ksmp][ctname] =  ksmp_ct_weight
+            
+        
+    # print json.dumps(allkar_ct_gene_count_dict, indent=4)
+    # print json.dumps(allkar_ct_gene_list_dict, indent=4)
+    # print json.dumps(allkar_gene_count_dict, indent=4)
+    # print json.dumps(allkar_weight_dict, indent=4)
+    # print json.dumps(allkar_ct_weight_dict, indent=4)
+
+    #--------------------------------------------------
+    #  Make karyotpe file. It's the outermost circle.
+    #-------------------------------------------------- 
+    
+    karyotype_file = circos_data_dir + "/karyotype.txt"
+    samples.sort()
+
+    with open(karyotype_file, 'w') as file:
+        for sample in samples:
+            if sample in allkar_weight_dict:
+                kar_weight = allkar_weight_dict[sample]
+                nkaryotype_length = np.int(np.round(kar_weight * circle_radius))
+                line = "chr\t-\t" + sample + "\t" + sample + "\t0\t" + \
+                    str(nkaryotype_length) + "\tvdgrey" 
+                file.write(line + "\n")
+    file.close()
+
+
+    #--------------------------------------------------
+    #  Make cell type text and tiles 
+    #-------------------------------------------------- 
+    celltype_text_file = circos_data_dir + "/celltype_text.txt"
+    celltype_tile_file = circos_data_dir + "/celltype_tiles.txt"
+    celltype_lower_tile_file = circos_data_dir + "/celltype_lower_tiles.txt"
+    celltype_highlight_file = circos_data_dir + "/celltype_highlight.txt"
+
+    # print sample_ct_generank_dict
+    # print cpop_score_df
+    ctype_rgbcolor_dict = {
+                "Bcells" : "(23,190,207)",
+                "DendriticCells": "(188,189,34)",
+                "Macrophages" :"(127,127,127)", 
+                "Macrophage" :"(127,127,127)", 
+                "Monocytes":"(207,236,249)", 
+                "Monocyte":"(207,236,249)", 
+                "NKCells":"(140,86,75)", 
+                "Neutrophil":"(148,103,189)", 
+                "Neutrophils":"(148,103,189)", 
+                "StemCells":"(214,39,40)", 
+                "TCells":"(214,39,40)", 
+                "StromalCells":"(44,160,44)", 
+                "abTcells":"(255,127,14)", 
+                "gdTCells":"(31,119,180)"}
+
+    ctype_abbrev = {
+                "Bcells" : "B",
+                "DendriticCells": "DC",
+                "Macrophages" : "Mac",
+                "Macrophage" : "Mac",
+                "Monocytes": "Mo",
+                "Monocyte": "Mo",
+                "NKCells": "NK",
+                "Neutrophil": "Neu",
+                "Neutrophils": "Neu",
+                "StemCells": "Stem",
+                "StromalCells": "Stro",
+                "TCells": "T",
+                "abTcells": "abT",
+                "gdTCells": "gdT"}
+
+    sample_ct_tile_stend_dict = defaultdict(dict)
+    with open(celltype_text_file, 'w') as file,\
+            open(celltype_tile_file, 'w') as file_cttile:
+        # print json.dumps(allkar_weight_dict, indent=4)
+        for insample,ctgenecount_dict in allkar_ct_gene_count_dict.iteritems():
+            chunk_list = []
+            breaks_list = []
+            sel_celltypes_filtered = []
+            for ct, nof_genes in ctgenecount_dict.iteritems():
+                weight = allkar_ct_weight_dict[insample][ct] 
+                chunk  = np.round(weight * circle_radius)
+                print insample, ct, nof_genes, chunk
+                sel_celltypes_filtered.append(ct)
+                chunk_list.append(chunk)
+                breaks_list.append(chunk)
+                
+            
+            # Get interval list
+            remlist = []
+            for i in range(0, len(chunk_list)-1):
+                chunk_list.pop()
+                remain = chunk_list
+                remlen = sum(remain)
+                remlist.append(remlen)
+
+            remlist.reverse()
+            remlist.insert(0,1)
+            intervals = remlist
+
+
+            for i, intv in enumerate(intervals):
+                start  = int(intv)
+                breaks = breaks_list[i]
+                end    = int(start + breaks - 10)
+                sel_celltype    = sel_celltypes_filtered[i]
+
+
+                cttextlines = "\t".join([insample, str(start),  str(end), ctype_abbrev[sel_celltype]])
+                file.write(cttextlines + "\n")
+
+                # Cell Type Tiles
+                color   = "color=" + ctype_rgbcolor_dict[sel_celltype]
+                cttileslines = "\t".join([insample, str(start),  str(end), color])
+                sample_ct_tile_stend_dict[insample][sel_celltype] = str(start) + " " + str(end)
+                file_cttile.write(cttileslines + "\n")
+
+    file.close()
+    file_cttile.close()
+
+    # make lower tile
+    shutil.copy(celltype_tile_file, celltype_lower_tile_file) 
+
+    #--------------------------------------------------
+    #  Make gene text
+    #-------------------------------------------------- 
+    genelist_text_file = circos_data_dir + "/genes_text.txt"
+    sample_ct_gene_stend_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    with open(genelist_text_file, 'w') as file_gene:
+        done_put = {}
+        for aismpl, actgenel in allkar_ct_gene_list_dict.iteritems():
+            for act, agenel in actgenel.iteritems():
+                tmp_aspl_dict = sample_ct_tile_stend_dict[aismpl]
+                for act1,ac_stend in tmp_aspl_dict.iteritems():
+                    if act == act1:
+                        sp_ct_stend = sample_ct_tile_stend_dict[aismpl][act]
+                        ct_st, ct_en = sp_ct_stend.split(" ")
+                        tiles_len = abs(int(ct_st) - int(ct_en))
+                        gene_breaks = tiles_len / (len(agenel)) 
+                        gene_intervals = [int(x) for x in np.arange(1, tiles_len, gene_breaks)]
+                        # print  aismpl, act, agenel
+                        for k, gene in enumerate(agenel):
+
+                            put_gene = ".".join([aismpl,act,gene]) 
+                            # if put_gene in done_put: continue
+                                
+                            gene_start = int(ct_st) + gene_intervals[k] - 1
+                            gene_end   = int(gene_start + gene_breaks)
+                            genes_line = "\t".join([aismpl, str(gene_start),  str(gene_end), gene ])
+                            file_gene.write(genes_line  + "\n")
+
+                            # Store gene positions
+                            sample_ct_gene_stend_dict[aismpl][act][gene] = str(gene_start) + "\t" + str(gene_end)
+                            done_put[put_gene] = 1
+    file_gene.close()     
+
+    #--------------------------------------------------
+    #  Prepare the data to Make links among genes
+    #-------------------------------------------------- 
+    done = {}
+    sample_ctype_ovlp_genes_link = defaultdict(lambda: defaultdict(list))
+    sample_ctype_ovlp_genes      = defaultdict(list)
+    sample_ctype_allgenes = defaultdict(lambda: defaultdict(list))
+    
+    for insample1,ctgenelist1 in allkar_ct_gene_list_dict.iteritems():
+        sel_celltypes1 = sel_aoshi_gene_dict[insample1].keys()
+        for sctype1 in sel_celltypes1:
+            if sctype1 not in sample_ct_tile_stend_dict[insample1]: continue
+                
+            gene_list1 = sel_aoshi_gene_dict[insample1][sctype1]
+
+            for insample2,ctgenelist2 in allkar_ct_gene_list_dict.iteritems():
+                sel_celltypes2 = sel_aoshi_gene_dict[insample2].keys()
+                for sctype2 in sel_celltypes2:
+                    if sctype2 not in sample_ct_tile_stend_dict[insample2]: continue
+                    gene_list2      = sel_aoshi_gene_dict[insample2][sctype2]
+                    donestr         = " ".join([insample1,sctype1, insample2, sctype2])
+                    genes_overlap   = list(set(gene_list1) & set(gene_list2))
+                    nof_ovlp_genes  = len(genes_overlap)
+
+                    # print "1: ", insample1, sctype1, gene_list1
+                    # print "2: ", insample2, sctype2, gene_list2
+                    sample_ctype_allgenes[insample1][sctype1] = gene_list1
+                    sample_ctype_allgenes[insample2][sctype2] = gene_list2
+
+                    if donestr in done: continue
+
+                    for ovlpg in genes_overlap:
+                        ky1 = insample1 + " "  + sctype1
+                        ky2 = insample2 + " "  + sctype2
+
+                        if ky1 == ky2: continue
+                        # print ky1, ky2, ovlpg, nof_ovlp_genes
+                        sample_ctype_ovlp_genes_link[ky1][ky2].append(ovlpg)
+                        sample_ctype_ovlp_genes[ky1].append(ovlpg)
+                        sample_ctype_ovlp_genes[ky2].append(ovlpg)
+                        
+
+                    done[" ".join([insample2,sctype2, insample1, sctype1])] = 1
+
+    #--------------------------------------------------
+    #  Make links among genes
+    #-------------------------------------------------- 
+    links_intra_file = circos_data_dir + "/gene_links_intra.txt"
+    links_inter_file = circos_data_dir + "/gene_links_inter.txt"
+
+    mixed_color = utils.mix_color(ctype_rgbcolor_dict)
+    sample_zvals = dict(zip(sample_list, range(1,10)))
+    gene_link_color = defaultdict(dict)
+
+    # intra == sampe samplels
+    # print json.dumps(sample_ctype_ovlp_genes_link, indent=4)
+    with open(links_intra_file, 'w') as filelink_intra,  open(links_inter_file, 'w') as filelink_inter:
+        for source_splct,target  in sample_ctype_ovlp_genes_link.iteritems():
+            source_spl, source_ct = source_splct.split()
+            for target_splct, stg_genelist in target.iteritems():
+                target_spl, target_ct = target_splct.split()
+                for stg in stg_genelist:
+                    src_gene_pos = sample_ct_gene_stend_dict[source_spl][source_ct][stg]
+                    trg_gene_pos = sample_ct_gene_stend_dict[target_spl][target_ct][stg]
+
+                    sctg_ct = source_ct + " " + target_ct
+                    if source_spl == target_spl:
+                        # attr_intra = "color=" + mixed_color[sctg_ct] + ",thickness=7p" 
+                        attr_intra = "color=lgrey,thickness=15p" 
+                        link_line_intra = "\t".join([source_spl, src_gene_pos,target_spl, trg_gene_pos ,attr_intra ])
+                        filelink_intra.write(link_line_intra + "\n")
+                        # print source_splct, stg,   'grey-intra'
+                        gene_link_color[stg]['grey-intra'] = 1
+
+                    else:
+                        attr_inter = "color=" + mixed_color[sctg_ct] + ",thickness=30p" 
+                        link_line_inter = "\t".join([source_spl, src_gene_pos,target_spl, trg_gene_pos ,attr_inter ])
+                        filelink_inter.write(link_line_inter + "\n")
+                        # print source_splct, stg,  'color-inter'
+                        gene_link_color[stg]['color-inter']  = 1
+    filelink_intra.close()
+    filelink_inter.close()
+
+    #--------------------------------------------------
+    #     Get link/unlink genes data 
+    #-------------------------------------------------- 
+    # print json.dumps(sample_ctype_allgenes, indent=4)
+    # print json.dumps(gene_link_color, indent=4)
+    link_status_genes_file = circos_data_dir + "/gene_link_status.tsv"
+
+    with open(link_status_genes_file, 'w') as lsgfile:
+        for ksmp, kctgl in sample_ctype_allgenes.iteritems():
+            for kct, kgl in kctgl.iteritems():
+                for kg in kgl:
+
+                    if kg in gene_link_color:
+                        statuslist = gene_link_color[kg].keys()
+                        for status in statuslist:
+                            out = "\t".join([ksmp, kct, kg, status])
+                            lsgfile.write(out + "\n")
+                    else:
+                        out = "\t".join([ksmp, kct, kg, "None"])
+                        lsgfile.write(out + "\n")
+                        # print out
+            
+    lsgfile.close()
+    
+        
+    sys.stderr.write("Finished preparing circos data...\n")
+
+
+if __name__ == '__main__':
+    main()
+

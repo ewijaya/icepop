@@ -19,9 +19,9 @@ ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ (highly rec
 
 To obtain the latest stable version into your python path::
 
-    $ pip install icepop==version
+    $  pip install --upgrade icepop --no-deps
 
-Where version numbering may looks like ``1.0.0.15``.
+Where version numbering may looks like ``1.0.0``.
 
 You may also opt to use your operating system's package manager; the package
 is typically called ``icepop`` or ``python-icepop``. E.g.::

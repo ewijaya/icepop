@@ -11,13 +11,18 @@ import argparse
 import sys  
 import os
 import pandas as pd 
+from openpyxl import load_workbook
+
+# To be removed later
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+
 from icepop import input_reader as ir
 from icepop import species_cell_proportion as scp
 from icepop import deconvolution as dc
 from icepop import specificity as sp
 from icepop import data_conversion
 from icepop import draw_cellpop as dw
-
+from icepop import correlation as cor
 
 def float_or_str(value):
     try:
@@ -25,7 +30,7 @@ def float_or_str(value):
     except:
         return value
 
-
+    
 
 def main():
     parser = argparse.ArgumentParser(description='''Estimate cell purities from raw expression data''')
@@ -33,9 +38,8 @@ def main():
     parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
     parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
     parser.add_argument("-m","-method",metavar="",help="optimization method (nnls, sqlsp)",type=str,default='nnls')
-    parser.add_argument("-o","-outfile",metavar="",help="output file in JSON, TSV, Excel, PNG/JPG/SVG format (inferred from suffix). If image,  make pie chart.",type=str,default='outfile.json')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in stdout, JSON, TSV, Excel, PNG/JPG/SVG format (inferred from suffix). If image,  make pie chart.",type=str,default='outfile.json')
     parser.add_argument("-p",metavar="",help="gene marker specificity limit (best,[0.1, ..., 0.9])",type=float_or_str,default='best')
-
 
     args = parser.parse_args()
     raw_infile = args.filename
@@ -48,6 +52,7 @@ def main():
     cellpop_df = None
     if organs == 'no_pref':
         cellpop_df = ir.read_hdf_expr(species=species)
+
     else:
         cellpop_df = ir.read_hdf_expr(species=species,organs=True)
         organ_list = list(cellpop_df.columns.levels[0])
@@ -57,7 +62,7 @@ def main():
             sys.exit("organs should be in this list: " + organlstr + "\n")
             sys.exit("now use *no_pref* instead \n")
 
-        organlist = cellpop_df.columns.values.tolist()
+        organlist  = cellpop_df.columns.values.tolist()
         cellpop_df = scp.choose_organ(cellpop_df, organs)
 
 
@@ -65,6 +70,8 @@ def main():
     if organs != 'no_pref' and species == "human":
         sys.exit("Human has no organs based proportion data.")
         
+
+    indf = ir.read_file(raw_infile,mode="RAW")
     
     marker_df = None
     if specif == 'best':
@@ -72,8 +79,6 @@ def main():
     else:
         marker_df = sp.find_marker_genes(cellpop_df,lim=specif)
 
-    indf = ir.read_file(raw_infile,mode="RAW")
-    # print indf.head()
     
     colnames = indf.columns.values.tolist()
     pivots = colnames[0:2]
@@ -88,10 +93,11 @@ def main():
 
     merged_df = reduce(lambda ldf, rdf: pd.merge(ldf,rdf, left_index=True, right_index=True), all_dfs) 
 
-    tmp_fnames = os.path.basename(outfile)
-    base, suff = tmp_fnames.split(".")
-
-    # print merged_df
+    base, suff = None, None
+    if "." in outfile:
+        tmp_fnames = os.path.basename(outfile)
+        base, suff = tmp_fnames.split(".")
+        
     
     if suff == "json":
         merged_df_json = data_conversion.df_to_dol(merged_df)
@@ -107,6 +113,8 @@ def main():
         merged_df.to_excel(outfile,index=False,float_format='%.3f')
     elif suff in ['svg','jpg','png']:
         dw.pieplot_deconv(merged_df, nrows=3,ncols=4,outfile=outfile)
+    elif outfile == 'stdout':
+        print  merged_df
 
 
 if __name__ == '__main__':

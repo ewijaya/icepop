@@ -1,0 +1,370 @@
+#!/usr/bin/env python
+""" 
+Scripts for making circos data
+for DEGs based analysis.
+
+It includes data for heatmap
+and GO analysis.
+
+"""
+__author__    = "Edward Wijaya <ewijaya@gmail.com>"
+__copyright__ = "Copyright 2015"
+
+import argparse
+import json
+import math
+import os 
+import sys
+import pandas as pd
+import numpy as np
+import shutil
+from operator import itemgetter
+from collections import defaultdict
+# To be removed later
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+
+from icepop import targetmine_query_urllib as tgm
+from icepop import enumerate_output as eo
+from icepop import cluster_cellpop_score as ccp
+from icepop import species_cell_proportion as scp
+from icepop import utils 
+
+
+def main():
+    parser = argparse.ArgumentParser(description='''Prepare Circos data for 
+            clustered DEGs.''')
+    parser.add_argument("filename", nargs='?',help="DEGs file in TSV, CSV or Excel format") 
+    parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
+    parser.add_argument("-k",metavar="",help="number of clusters",type=int,default=20)
+    parser.add_argument("-m","-method",metavar="",help="clustering method (complete, average, ward)",type=str,default='ward')
+    parser.add_argument("-d","-distance",metavar="",help="distance measure (euclidean, manhattan, pearsond)",type=str,default='euclidean')
+    parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
+    parser.add_argument("-p","-pvalue",metavar="",help="p-value lower threshold",type=str,default='1.00')
+    parser.add_argument("-c","-cormeth",metavar="",help="correction method (HOLM_BONFERRONI,BENJAMINI_HOCHBERG,BONFERRONI)",type=str,default='HOLM_BONFERRONI')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in JSON format",type=str,default='outfile.json')
+    parser.add_argument("-fclim",metavar="",help="fold change limit",type=float, default=1.5)
+    parser.add_argument("-circos_dir",metavar="",help="directory to store circos files, please use absolute path",type=str)
+    parser.add_argument("--immune", help="only show immune GO terms",action="store_false")
+  
+
+    args = parser.parse_args()
+    deg_infile = args.filename
+    species    = args.s
+    out_json   = args.o
+    nof_clust  = args.k
+    cormeth    = args.c
+    organs     = args.g
+    method     = args.m
+    dist       = args.d
+    pvalim     = args.p
+    immune     = args.immune 
+    circos_dir = args.circos_dir
+    fclim      = args.fclim
+
+    sys.stderr.write("*******************************************************\n")
+    sys.stderr.write("For further image enhancement, users may need to adjust\n")
+    sys.stderr.write("Circos config files created using this script.\n")
+    sys.stderr.write("They are stored under users_circos_dir/etc.\n")
+    sys.stderr.write("*******************************************************\n")
+    sys.stderr.write("Generating files ......\n")
+    sys.stderr.write("Execute make_circos_image.sh on these files independently.\n")
+
+    gene_count = True    
+    logscale   = False
+    # print args
+
+    circos_data_dir = circos_dir + "/data"
+
+    if not os.path.exists(circos_dir):
+        sys.stderr.write("Make directory: " + circos_dir + "\n")
+        os.makedirs(circos_dir)
+
+    # Make data dir
+    if not os.path.exists(circos_data_dir):
+        sys.stderr.write("Make data directory: " + circos_data_dir + "\n")
+        os.makedirs(circos_data_dir)
+
+
+    # Desired Circos radius.
+    circle_radius = 10000
+    
+    # Read input file
+    df       = pd.io.parsers.read_table(deg_infile)
+    colnames = df.columns.values.tolist()
+    prgenes  = colnames[0:2]
+    samples  = colnames[2:]
+
+
+    #--------------------------------------------------
+    # Copy etc/conf file  
+    #-------------------------------------------------- 
+    mems  =  __file__.split("/")
+    npath = mems[0:len(mems)-2]
+    circos_source_etcdir = "/".join(npath) + "/icepop/circos_conf/etc"   
+    circos_target_etcdir = circos_dir + "/etc" 
+
+    # Make circos_target_data dir
+    if os.path.exists(circos_target_etcdir):
+        shutil.rmtree(circos_target_etcdir)
+        os.makedirs(circos_target_etcdir)
+        utils.copytree(circos_source_etcdir, circos_target_etcdir)
+    else:
+        os.makedirs(circos_target_etcdir)
+        utils.copytree(circos_source_etcdir, circos_target_etcdir)
+
+    #--------------------------------------------------
+    # Make result directory 
+    #-------------------------------------------------- 
+    circos_results_dir = circos_dir + "/results"
+    if not os.path.exists(circos_results_dir):
+        sys.stderr.write("Make results directory: " + circos_results_dir + "\n")
+        os.makedirs(circos_results_dir)
+
+    #--------------------------------------------------
+    #  Make karyotpe file. It's the outermost circle.
+    #-------------------------------------------------- 
+    karyotype_file = circos_data_dir + "/karyotype.txt"
+    karyotype_length = circle_radius / len(samples)
+    
+    with open(karyotype_file, 'w') as file:
+        for sample in samples:
+            line = "chr\t-\t" + sample + "\t" + sample + "\t0\t" + \
+                str(karyotype_length) + "\tbrbg-6-div-6" 
+            file.write(line + "\n")
+    file.close()
+    
+
+    #--------------------------------------------------
+    # Get cell population
+    #-------------------------------------------------- 
+    cellpop_df    = scp.get_prop(species=species,mode="pandas_df")
+    cellpop_coln  = cellpop_df.columns.values.tolist()
+    celltypes     = sorted(cellpop_coln[1:])
+    nof_celltype  = len(celltypes)
+
+    #--------------------------------------------------
+    #  Make cell type text and tiles 
+    #-------------------------------------------------- 
+    celltype_text_file = circos_data_dir + "/celltype_text.txt"
+    celltype_tile_file = circos_data_dir + "/celltype_tiles.txt"
+    
+
+    celltype_tile_length = (circle_radius / len(samples) ) / len(celltypes)
+    chunk = celltype_tile_length 
+    chunk_list  = [ chunk ] * len(celltypes)
+    breaks_list  = [ chunk ] * len(celltypes)
+
+    # Get interval list
+    remlist = []
+    for i in range(0, len(chunk_list)-1):
+        chunk_list.pop()
+        remain = chunk_list
+        remlen = sum(remain)
+        remlist.append(remlen)
+        #print chunk_list[i], remain
+        
+    remlist.reverse()
+    remlist.insert(0,1)
+    intervals = remlist
+
+    ctype_abbrev = {
+            "Bcells" : "B",
+            "DendriticCells": "DC",
+            "Macrophages" : "Mac",
+            "Monocytes": "Mo",
+            "NKCells": "NK",
+            "Neutrophils": "Neu",
+            "StemCells": "Stem",
+            "StromalCells": "Stro",
+            "abTcells": "abT",
+            "gdTCells": "gdT"}
+
+
+    # Text
+    with open(celltype_text_file, 'w') as file:
+        for sample in samples:
+            for i, intv in enumerate(intervals):
+                start  = intv
+                breaks = breaks_list[i]
+                end    = int(start + breaks - 10)
+                celltype    = celltypes[i]
+                cttextlines = "\t".join([sample, str(start),  str(end), ctype_abbrev[celltype]])
+                file.write(cttextlines + "\n")
+    file.close()
+    
+    # Tiles
+    tiles_dict = defaultdict(dict)
+    with open(celltype_tile_file, 'w') as file:
+        for sample in samples:
+            for i, intv in enumerate(intervals):
+                start  = intv
+                breaks = breaks_list[i]
+                end    = int(start + breaks - 10)
+                celltype    = celltypes[i]
+                color   = "color=vdgrey"
+                cttextlines = "\t".join([sample, str(start),  str(end), color])
+                file.write(cttextlines + "\n")
+                tiles_dict[sample][celltype] = str(start) + " " + str(end)
+    file.close()
+            
+   
+    #--------------------------------------------------
+    #  Make heatmap file 
+    #-------------------------------------------------- 
+    heatmap_file = circos_data_dir + "/heatmap.txt"
+    
+    sample_clid_genelist = defaultdict(lambda: defaultdict(list))
+    sample_celltype_clid_stend = defaultdict(lambda: defaultdict(dict))
+    sample_celltype_clid_zscore = defaultdict(lambda: defaultdict(list))
+    
+    with open(heatmap_file, 'w') as file:
+        # construct cell population df
+        for sample in samples:
+            indf = df[prgenes + [sample]]
+            full_clust_cpopdf, full_clust_degdf = ccp.cluster_cellpop_score(cellpopdf=cellpop_df, degdf=indf, \
+                        fclim=fclim, gene_count=False,logscale=False, k=nof_clust, method=method, dist=dist)
+            
+            
+            # Capture gene leste for each cluster
+            # in every sample
+            # print full_clust_degdf.head()
+            clid_genes_list = full_clust_degdf[["ClusterID","Genes"]].to_dict(orient='split')
+            for inlist in clid_genes_list['data']:
+                cid, gene = inlist
+                sample_clid_genelist[sample][cid].append(gene) 
+
+
+            # print full_clust_cpopdf
+            outdict = full_clust_cpopdf.set_index('Cluster').to_dict()
+
+            # celltype from line 134
+            for ctype in celltypes:
+                clidzscdict = outdict[ctype]
+                for clid, zscore in clidzscdict.iteritems():
+                    i = int(clid) - 1
+                    tiles_stend = tiles_dict[sample][ctype]
+                    tiles_st, tiles_en = tiles_stend.split(" ")
+                    tiles_st  = int(tiles_st)
+                    tiles_en  = int(tiles_en)
+                    tiles_len = abs(tiles_en - tiles_st)
+                    breaks    = tiles_len / nof_clust  
+                    intervals = [int(x) for x in np.arange(1, tiles_len, breaks)]
+                    start = tiles_st + intervals[i] - 1
+                    end   = int(start + breaks)
+                    hmap_entry = "\t".join([sample, str(start), str(end),  str(zscore)])
+                    
+                    # store for later use
+                    sample_celltype_clid_zscore[sample][ctype].append([clid,zscore])
+                    sample_celltype_clid_stend[sample][ctype][str(clid)] = str(start) + " " + str(end)
+                    file.write(hmap_entry + "\n")
+
+    file.close()
+
+    # print json.dumps(sample_celltype_clid_zscore, indent=4)
+    # print json.dumps(sample_celltype_clid_stend, indent=4)
+    
+    #--------------------------------------------------
+    #  Make GO links file 
+    #-------------------------------------------------- 
+    # print json.dumps(sample_clid_genelist, indent=4)
+    term_sample_clid = defaultdict(list)
+    sample_termlist = defaultdict(list)
+    for sample, clidgenes_dict in sample_clid_genelist.iteritems():
+        for cli,genelist in clidgenes_dict.iteritems():
+            genelist_str = ",".join(genelist) 
+            for vals in tgm.get_tgm_data(genelist_str,immune=True, species=species, useSymbol="true",pvalim=pvalim,cormeth=cormeth):
+                theme, term, pval, _ = vals
+                scid = sample + " " + str(cli)
+                term_sample_clid[term].append(scid)
+                sample_termlist[scid].append([term,float(pval)])
+                print sample, "\t",  cli, "\t".join(vals)
+                # print sample, "\t",  cli, "\t".join(vals)
+                
+
+    sys.stderr.write("Finish GO assessment...\n")
+
+    go_text_file = circos_data_dir + "/go_text.txt"
+    done = {}
+    go_text_pos_dict = defaultdict(list)
+
+    with open(go_text_file, 'w') as file:
+        for term, samplcidlist in term_sample_clid.iteritems():
+            nofsamples = len(samplcidlist)
+            if nofsamples > 1:
+                for sple in samplcidlist:
+
+                    # For every cluster in samples pick best term 
+                    # by p-value
+                    term_pval_list  = sample_termlist[sple]
+                    term_pval_list = sorted(term_pval_list, key=itemgetter(1))
+                    best_term, _ = term_pval_list[0]
+                    # print json.dumps(term_pval_list, indent=4)
+
+                    # if sple in done: continue
+                    spl, cid = sple.split(" ")
+                    for ct in celltypes:
+
+
+                        zscore_list = sample_celltype_clid_zscore[spl][ct]
+                        # Select most significant zscore (i.e. > 1.3)
+                        cid_highest_zsc = [item[0] for item in zscore_list if item[1] > 1.3]
+                        
+                        if cid_highest_zsc:
+                            for best_cid in cid_highest_zsc:
+
+                                
+                                positions = sample_celltype_clid_stend[spl][ct][str(best_cid)]
+                                pst, pen = positions.split(" ")
+
+                                nsple = spl + " " + str(best_cid) + " " + positions
+
+                                # print "\t", nsple
+
+                                if nsple in done: continue
+                                go_text_pos_dict[best_term].append("\t".join([spl, pst, pen]))
+                                go_text = "\t".join([spl, pst, pen, best_term])
+                                # print go_text, ct, cid
+                                file.write(go_text + "\n")
+                                done[nsple] = 1
+    file.close()
+    
+    # print json.dumps(go_text_pos_dict, indent=4)
+    go_links_file = circos_data_dir + "/go_links.txt"
+
+    done2 = {}
+    with open(go_links_file, 'w') as file2:
+        for bterm, poslist in go_text_pos_dict.iteritems():
+            for pl1 in poslist:
+                spl1 = pl1.split("\t")[0]
+
+                for bterm2, poslist2 in go_text_pos_dict.iteritems():
+                    for pl2 in poslist2:
+                        spl2 = pl2.split("\t")[0]
+
+                        quals = None
+                        if spl1 == spl2: 
+                            # print bterm, pl1, pl2
+                            # For those that comes from same samples
+                            # place the links at the bottom with z=1
+                            quals = "color=lgrey,z=1,thickness=2.5p" 
+                        else:
+                            # For those  from different samples.
+                            # Place it on top 
+                            quals = "color=dark2-7-qual-7,z=4,thickness=4.0p" 
+                        if pl1 != pl2:
+                            dupstr = pl2 + "/" + pl1
+                            if dupstr not in done2: 
+                                go_links = "\t".join([pl1,pl2,quals])
+                                # print go_links
+                                file2.write(go_links + "\n")
+                                done2[dupstr] = 1
+    file2.close()
+    
+    sys.stderr.write("Done.....\n")        
+    
+        
+        
+    
+
+if __name__ == '__main__':
+    main()

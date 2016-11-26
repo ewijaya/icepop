@@ -11,6 +11,7 @@ import json
 import argparse
 import sys  
 import os
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop') 
 from icepop import input_reader as ir
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo

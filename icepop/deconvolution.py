@@ -51,6 +51,7 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
               cell types (:math:`x`).
     """
     mixedexp_df = mixedexp_df.copy()
+    cellpop_df = cellpop_df.copy()
     colnames = mixedexp_df.columns.values.tolist()
     sample_names = colnames[1:]
     mixedexp_df.columns = ["Genes"] + sample_names 
@@ -85,12 +86,26 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
     # Very important, but still need to explore
     # which way is the best to scale it.
 
+    # Norm V1
     # max_val = max(A.max(axis=0).max(), B.max())
     # A = A/max_val
     # B = B/max_val
 
+    # Norm V2
+    # A = A/A.sum(axis=0)
+    # B = B/B.sum()
+
+    # Norm V3 (Best)
     A = A/A.max(axis=0)
     B = B/B.max()
+
+    # # Norm V4 (Looks better than V3)
+    # # normalize row
+    # new_A = A/A.sum(axis=1)[:,None]
+    # # normalize column 
+    # A = new_A/new_A.sum(axis=0)
+    # B = B/B.sum()
+
 
     if method == "sqlsp":
         x = by_sqlsp(A, B)
@@ -104,7 +119,7 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
     # convert to pandas data frame
     final_df = pd.DataFrame.from_dict(final, orient="index")
     final_df.columns = [sample_names]
-    final_df = np.round(final_df, decimals=3) 
+    final_df = np.round(final_df, decimals=10) 
     return final_df
 
 def by_nnls(A=None, B=None):
@@ -126,15 +141,29 @@ def by_nnls(A=None, B=None):
     number_of_celltypes = A.shape[-1]
     A = np.nan_to_num(A)
     B = np.nan_to_num(B)
+    # print A.shape
+    # print B.shape
+    # print "B"
+    # print repr(B)
+    # print "A"
+    # print repr(A)
 
-    A = np.vstack([A,np.ones(number_of_celltypes)])
-    B = np.hstack([B,1.0])
+    # A = np.vstack([A,np.ones(number_of_celltypes)])
+    # B = np.hstack([B,1.0])
+
+    # Tikhonov regularization
+    lamb = 0.5
+    n_variables = A.shape[1]
+    A = np.concatenate([A, np.sqrt(lamb)*np.eye(n_variables)])
+    B = np.concatenate([B, np.zeros(n_variables)])
+
+
+    # NNLS
     x, rnorm = nnls(A,B)
     
     # Further ensure that the solution sums to 1
     # because earlier nnls doesn't give sum to 1
     x = x / x.sum()
-    # print x
     # print x.sum()
     return x
     
@@ -153,8 +182,8 @@ def by_sqlsp(A=None, B=None):
     
     """
     number_of_celltypes = A.shape[-1]
-    # A = np.nan_to_num(A)
-    # B = np.nan_to_num(B)
+    A = np.nan_to_num(A)
+    B = np.nan_to_num(B)
     def f(x):
         """ 
 
@@ -183,7 +212,6 @@ def by_sqlsp(A=None, B=None):
             bounds=((0, np.inf),)* number_of_celltypes, constraints=cons)
     x = solution.x
     return x
-    #print x.sum()
     
     
 

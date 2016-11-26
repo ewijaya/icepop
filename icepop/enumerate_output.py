@@ -125,23 +125,25 @@ def enumerate_geneclust_go_output(cellpopdf, degdf, gene_count=False, \
                 go_lol.append(nvals)
                 # print "\t", nvals
 
-    _, extension = os.path.splitext(outfilename)
-    
-    if extension==".tsv":
-        if verbose:
-             sys.stderr.write("Creating TSV file\n")
-        headers = ["Cluster ID","Fold Change","GO Term","P-value","Gene List"]
+    headers = ["Cluster ID","Fold Change","GO Term","P-value","Gene List"]
+    if outfilename == None:
         outdf = pd.DataFrame(go_lol,columns=headers)
-        # print outdf.head()
-        outdf.to_csv(outfilename,sep="\t",index=False,float_format='%.3f')
+        return outdf
     else:
-        if verbose:
-             sys.stderr.write("Creating JSON file\n")
-        # Write cell population cluster to JSON
-        with open(outfilename,'w') as jsonout:
-            json.dump(go_lol, jsonout, indent=4)
-    
-    return
+        _, extension = os.path.splitext(outfilename)
+        if extension==".tsv":
+            if verbose:
+                 sys.stderr.write("Creating TSV file\n")
+            outdf = pd.DataFrame(go_lol,columns=headers)
+            # print outdf.head()
+            outdf.to_csv(outfilename,sep="\t",index=False,float_format='%.3f')
+        else:
+            if verbose:
+                 sys.stderr.write("Creating JSON file\n")
+            # Write cell population cluster to JSON
+            with open(outfilename,'w') as jsonout:
+                json.dump(go_lol, jsonout, indent=4)
+        
 
 def enumerate_geneclust_output(cellpopdf, degdf, gene_count=False, \
         outfilename=None, k=None, logscale=None, fc_range=None,\
@@ -252,43 +254,57 @@ def enumerate_output(cellpopdf, degdf, gene_count=False, \
     final = []
     for fc_lim in fc_range:
         # sys.stderr.write("EO:" +  str(gene_count) + "\n")
-        nof_genes_dict, cpop_score_df = cp.deg_cellpopscore_df(cellpopdf, degdf, fclim=fc_lim, \
-                            gene_count=gene_count, logscale=False)
+        nof_genes_dict, sample_response_dict, celltype_response_dict, cpop_score_df = cp.deg_cellpopscore_df(cellpopdf, degdf, fclim=fc_lim, \
+                            gene_count=gene_count, logscale=logscale)
         mdict = cpop_score_df.to_dict()
         outlist = []
         for sample, cellpopvals in mdict.iteritems():
-            celltypelist = []
-            nof_genes = nof_genes_dict[sample]
+            celltypelist            = []
+            nof_genes               = nof_genes_dict[sample]
+            celltype_response_thres = float(celltype_response_dict[sample])
+            sample_response_val   = float(sample_response_dict[sample])
 
-            
+
+            # print sample
+            # print "CRT : ", celltype_response_thres
+            # print "SR  : ", sample_response_val
+
             # sort by cell types
             od = collections.OrderedDict(sorted(cellpopvals.items()))
             for celltype, val in od.iteritems():
                 celltypelist.append({"celltype":celltype,"score":val})
-            outlist.append({"values":celltypelist, "sample": sample,
-                "nof_genes": nof_genes})
+            outlist.append({
+                            "values":celltypelist, 
+                            "sample": sample,
+                            "nof_genes": nof_genes, 
+                            "celltype_response_thres":celltype_response_thres,
+                            "sample_response_score":sample_response_val
+                            })
         
         
-        #print json.dumps(outlist, indent=4)
         final.append({"threshold":fc_lim,"histograms":outlist}) 
     
-    # print json.dumps(final, indent=4)
 
-    with open(outfilename,'w') as jsonout:
-        json.dump(final, jsonout, indent=4)
+    if outfilename == None:
+        pass
+    else:
+        with open(outfilename,'w') as jsonout:
+            json.dump(final, jsonout, indent=4)
     return
 
 def main():
     """
     Used for testing this file.
     """
-    deg_infile    = "../testing/degs_based_analysis/input_type1_degs.tsv"
+    deg_infile    = "../../testing/degs_based_analysis/dataset/Yoshioka_foldchange.tsv"
+    # deg_infile    = "../testing/degs_based_analysis/input_type1_degs.tsv"
     cellpop_df    = scp.get_prop(species="mouse",mode="pandas_df")
     indf          = ir.read_file(deg_infile, mode="DEG") 
     foldchange_range =[2,2.5,3,3.5,4,4.5,5]
-    out_json = "../testing/degs_based_analysis/output_type1_degs.json"
+    out_json = "../../testing/degs_based_analysis/output_type1_degs.json"
+    # out_json = "../../testing/degs_based_analysis/output_type1_degs.gc.json"
     enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
-            outfilename = out_json,  gene_count=True, logscale=False)
+            outfilename = out_json,  gene_count=False, logscale=True)
 
     # enumerate_geneclust_go_output(cellpop_df, indf, gene_count=False, \
     #         outfilename=out_json, k=40, logscale=None,\

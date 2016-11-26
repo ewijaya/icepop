@@ -10,9 +10,31 @@ import json
 import sys
 import os
 import numpy as np
+import operator
+from collections import defaultdict
 from numpy import linalg as LA
+import pandas as pd
+import input_reader as ir
 
 
+def bind_sparseness_score(indf=None):
+    """
+    Given a Pandas data frame with genes
+    as row and column of cell types or samples
+    append sparseness score at the end
+    
+    :indf: Pandas data frame.
+    :returns: Pandas data frame with appended sparseness score.
+    """
+
+    nindf = indf.copy()
+    genelist   = nindf.ix[:,0]
+    val_df  = nindf.ix[:,1:]
+    
+    sparse_list = sparseness(val_df.values)
+    nindf["sparseness_score"] = sparse_list
+
+    return nindf
 
 
 
@@ -90,19 +112,14 @@ def sparseness(xs=None):
     sparseness = (nr - a/b) / (nr -1)
     return sparseness
 
-
-def find_marker_genes(df, method="sparseness", lim=0.8):
+def assign_specificity_score(df, method='sparseness'):
     """
-    Find marker genes from expression cell population by
-    some specificity score.
-
+    Assign specificity score to the ImmGen/IRIS data. 
     :param df: Pandas data frame, generally proportion file.
     :param method: str("sparseness","js")
-    :param lim:  float, threshold to select 
-    :returns: a Panda data frame with selected marker genes.
-    
+
+    :returns: a Panda data frame with where every genes will have its specificity score.
     """
-    
     genelist = df.ix[:,0]
     express_df   = df.ix[:,1:]
 
@@ -118,6 +135,55 @@ def find_marker_genes(df, method="sparseness", lim=0.8):
 
     mg_df = df.copy()
     mg_df[method] = marker_genes_df
+    return mg_df
+    
+
+def find_topk_marker_genes(df, method='sparseness',to_exclude=None,lim=0.8,top_k=1):
+    """
+    Find marker genes from expression cell population by
+    some specificity score. Then select to 10 genes, 
+    one gene which is most specific in one cell type. 
+    
+
+    :param df: Pandas data frame, generally proportion file.
+    :param to_exclude: list of cell type to exclude. If None,
+                       average between abTcell and gdTcell will be performed.
+    :param method: str("sparseness","js")
+
+    :returns: a Panda data frame with selected marker genes.
+    """
+    outerdict = ir.read_specificity_pickle()
+     
+     
+    mg_df = df.copy()
+    # get top_k genes for every cell types
+    all_sel_genes = []
+    for ct,topgenes in outerdict.iteritems():
+        sel_genes = topgenes[0:top_k] 
+        sel_genes = [ x.split()[0] for x in sel_genes] 
+        # print ct, ":",  ",".join(sel_genes) 
+        all_sel_genes += sel_genes
+        
+    mg_df = mg_df[mg_df['Genes'].isin(all_sel_genes)]
+    tmp_marker_mat = mg_df.ix[:,1:-1].values
+    condn          = LA.cond(tmp_marker_mat)
+    mg_df.drop(to_exclude[0],axis=1,inplace=True)
+    # print mg_df
+    # print "CN:", condn
+    return mg_df
+    
+
+def find_marker_genes(df, method="sparseness", lim=0.8):
+    """
+    Find marker genes from expression cell population by
+    some specificity score.
+
+    :param df: Pandas data frame, generally proportion file.
+    :param method: str("sparseness","js")
+    :param lim:  float, threshold to select 
+    
+    """
+    mg_df = assign_specificity_score(df,method=method)    
     mg_df = mg_df.loc[mg_df[method] >= lim]
     mg_df.drop(method,axis=1,inplace=True)
    
@@ -125,13 +191,11 @@ def find_marker_genes(df, method="sparseness", lim=0.8):
 
 def condn_thres_mat(df,method='sparseness',verbose=False):
     """
-    Function to enumerate condition number from
-    series of thresholds.
+    Function to enumerate condition number from series of thresholds.
 
     :param df: Pandas data frame, generally proportion file.
-    :returns : numpy (3 x 2) matrix, which stores list of threshold, 
-                condition number and number of markers
-    
+    :returns: numpy (3 x 2) matrix, which stores list of threshold, condition \
+        number and number of markers.
     """
     conds = np.empty((10,3))
     for i, splim in enumerate(np.arange(0,1,0.1)):
@@ -159,6 +223,8 @@ def find_best_marker_genes(df, method="sparseness",verbose=False):
     :returns: a Panda data frame with selected marker genes.
     
     """
+    # print "FBMG"
+    # print df.head()
     conds = condn_thres_mat(df,method=method,verbose=verbose)
     # print repr(conds)
     # Index where the condition number is minimum 

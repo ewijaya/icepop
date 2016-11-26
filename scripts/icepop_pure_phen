@@ -1,0 +1,152 @@
+#!/usr/bin/env python
+""" 
+Given a raw gene expression data (no treatment) 
+the scripts the cell type purity content.
+Use the phenotype version (more fine grained)
+
+When organ is specified, the work flow is as follows.
+
+    1. From ImmGen matrix select columns by organs.
+    2. Compute correlation for every phenotype column with input
+    3. Select phenotype columns by correlation values
+    4. Average expresssion of phenotype by the parent cell type
+    5. Find best marker genes
+    6. Infer cell purity
+
+
+"""
+__author__    = "Edward Wijaya <ewijaya@gmail.com>"
+__copyright__ = "Copyright 2015"
+import csv
+import json
+import argparse
+import sys  
+import os
+import pandas as pd 
+
+# To be removed later
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+
+from icepop import input_reader as ir
+from icepop import species_cell_proportion as scp
+from icepop import deconvolution as dc
+from icepop import specificity as sp
+from icepop import data_conversion
+from icepop import draw_cellpop as dw
+from icepop import correlation as cor
+
+def float_or_str(value):
+    try:
+        return float(value)
+    except:
+        return value
+
+    
+
+def main():
+    parser = argparse.ArgumentParser(description='''Estimate cell purities from raw expression data''')
+    parser.add_argument("filename", nargs='?',help="DEGs file in TSV, CSV or Excel format") 
+    parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
+    parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
+    parser.add_argument("-m","-method",metavar="",help="optimization method (nnls, sqlsp)",type=str,default='nnls')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in stdout, JSON, TSV, Excel, PNG/JPG/SVG format (inferred from suffix). If image,  make pie chart.",type=str,default='outfile.json')
+    parser.add_argument("-p",metavar="",help="gene marker specificity limit (best,[0.1, ..., 0.9])",type=float_or_str,default='best')
+
+    args = parser.parse_args()
+    raw_infile = args.filename
+    species    = args.s
+    organs     = args.g
+    method     = args.m
+    outfile    = args.o
+    specif     = args.p
+
+    cellpop_phen_exp_df, cpphen_df = None, None 
+    if organs == 'no_pref':
+        cellpop_phen_exp_df, cpphen_df = ir.read_hdf_pheno()
+    else:
+        cellpop_phen_exp_df, cpphen_df = ir.read_hdf_pheno()
+        organ_list = set(cpphen_df["organs"].tolist())
+
+        # Select columns by specified organs
+        phenotype_organs_df = cpphen_df[cpphen_df["organs"].isin([organs])]
+        phen_byorgans_list  = phenotype_organs_df["phenotype"].tolist()
+        cellpop_phen_exp_df = cellpop_phen_exp_df[["Genes"] + phen_byorgans_list]
+        
+        if organs not in organ_list:
+            organlstr = ",".join(organ_list)
+            sys.exit("organs should be in this list: " + organlstr + "\n")
+            sys.exit("now use *no_pref* instead \n")
+
+
+    sys.stderr.write("Complete parsing cell population\n")
+    # Sanity check
+    if organs != 'no_pref' and species == "human":
+        sys.exit("Human has no organs based proportion data.")
+        
+
+    indf = ir.read_file(raw_infile,mode="RAW")
+        
+    # Find best cell types
+    sel_phen_dict,pcor_full_df = cor.correlation(userinput_df=indf, cpop_phen_exp_df=cellpop_phen_exp_df,
+            ctype_phen_df= cpphen_df, method="pearson") 
+    sys.stderr.write("Complete finding best cell type phenotypes\n")
+
+    nall_dfs = []
+    
+    for sample, cellpopphen_avg_df in  cor.average_expression(phendict=sel_phen_dict,
+                            cpop_phen_exp_df=cellpop_phen_exp_df, ctype_phen_df= cpphen_df): 
+
+        sys.stderr.write("Processing " + sample + "\n")
+        colnames = indf.columns.values.tolist()
+        gene_head = colnames[1]
+        new_df = indf[[gene_head, sample]]
+
+        ph_marker_df = None
+        if specif == 'best':
+            ph_marker_df = sp.find_best_marker_genes(cellpopphen_avg_df,verbose=False)
+        else:
+            ph_marker_df = sp.find_marker_genes(cellpopphen_avg_df,lim=specif)
+
+
+        x_solved_df = dc.deconvolve_expr(mixedexp_df = new_df, cellpop_df=ph_marker_df,method=method)
+        nall_dfs.append(x_solved_df)
+
+    merged_df = reduce(lambda ldf, rdf: pd.merge(ldf,rdf, left_index=True, right_index=True, how='outer'), 
+                nall_dfs).fillna(0) 
+        
+    # Fill in cell type that is not included
+    # in final calculation with 0.
+    # And sort the cell type case insensitive
+    ctype_list = set(cpphen_df["celltype"])
+    full_index = pd.DataFrame(index=ctype_list)
+    merged_df =  full_index.join(merged_df).fillna(0)
+    merged_df = merged_df.reindex(sorted(merged_df.index, key=lambda x: x.lower()))
+
+    base, suff = None, None
+    if "." in outfile:
+        tmp_fnames = os.path.basename(outfile)
+        base, suff = tmp_fnames.split(".")
+        
+
+    print merged_df
+    
+    if suff == "json":
+        merged_df_json = data_conversion.df_to_dol(merged_df)
+        with open(outfile,'w') as jsonout:
+            json.dump(merged_df_json, jsonout, indent=4)
+    elif suff == "tsv":
+        merged_df.index.names = ['Cell_type']
+        merged_df.reset_index(inplace=True)
+        merged_df.to_csv(outfile,sep="\t",index=False,float_format='%.3f')
+    elif suff == "xlsx" or  suff == 'xls':
+        merged_df.index.names = ['Cell_type']
+        merged_df.reset_index(inplace=True)
+        merged_df.to_excel(outfile,index=False,float_format='%.3f')
+    elif suff in ['svg','jpg','png']:
+        dw.pieplot_deconv(merged_df, nrows=3,ncols=4,outfile=outfile)
+    elif outfile == 'stdout':
+        print  merged_df
+
+
+if __name__ == '__main__':
+    main()

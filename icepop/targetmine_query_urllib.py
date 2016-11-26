@@ -11,6 +11,7 @@ import sys
 import os
 import re
 import requests
+import decimal
 
 
 def get_tgm_data(genelist_string,species="mouse",\
@@ -54,7 +55,6 @@ def get_tgm_data(genelist_string,species="mouse",\
     correctionMethod = cormeth
     showBg = "false"
     useSymbol = useSymbol
-    print useSymbol
     # username = "tmext"
     # password = "saito27x"
 
@@ -81,6 +81,12 @@ def get_tgm_data(genelist_string,species="mouse",\
             term = tmp[1]
             pval = tmp[2]
             genelist = tmp[3]
+
+
+            # Format p-value into scientific style
+            pval = float(pval)
+            pval = "{:.2E}".format(decimal.Decimal(pval))
+            pval = str(pval)
 
             m = re.search('\[(.*)\]',genelist)
             genelist = m.group(1)
