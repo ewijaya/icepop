@@ -36,7 +36,6 @@ setup(name='icepop',
                        'proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv',
                        'proportion_data/IRIS.csv',
                        'circos_conf/etc/fonts/Arial.ttf',
-                       'circos_conf/etc/fonts/arial.ttf',
                        'circos_conf/etc/*.*'
                        ]},
      scripts=[ 'scripts/icepop_degs',
