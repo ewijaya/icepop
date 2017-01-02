@@ -56,7 +56,6 @@ in your main path. Typical use looks like this in Bash script:
     CIRCOS_DIR=your_circos_dir
     CIRCOS_CONF=//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
 
-
     icepop_degs_circos_uniform $INFILE \ 
         --go \
         -fclim 2 \
