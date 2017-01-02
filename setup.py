@@ -34,7 +34,7 @@ setup(name='icepop',
                        'proportion_data/iris_human.h5',
                        'proportion_data/mouse_organ_genes.cvfilter.h5',
                        'proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv',
-                       'proportion_data/IRIS.csv'
+                       'proportion_data/IRIS.csv',
                        'circos_conf/etc/*.*'
                        ]},
      scripts=[ 'scripts/icepop_degs',
