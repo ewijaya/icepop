@@ -13,9 +13,7 @@ ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ through
 one of the following commands::
 
     $ pip install git+https://github.com/ewijaya/icepop.git 
-
-or:: 
-
+    $ pip install git+https://github.com/ewijaya/icepop.git --upgrade
     $ pip install git+git://github.com/ewijaya/icepop.git
     $ pip install git+git://github.com/ewijaya/icepop.git --upgrade
 
