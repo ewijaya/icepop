@@ -35,12 +35,12 @@ setup(name='icepop',
                        'proportion_data/mouse_organ_genes.cvfilter.h5',
                        'proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv',
                        'proportion_data/IRIS.csv',
-                       'circos_conf/etc/*'
+                       'circos_conf/etc/fonts/*.*',
+                       'circos_conf/etc/*.*'
                        ]},
      scripts=[ 'scripts/icepop_degs',
                'scripts/go_degs_cluster',
                'scripts/icepop_degs_cluster',
-               'scripts/icepop_pure' 
                ]
 
 )
