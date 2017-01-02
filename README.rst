@@ -54,6 +54,8 @@ in your main path. Typical use looks like this in Bash script:
 
     INFILE=input_type1_degs.tsv
     CIRCOS_DIR=your_circos_dir
+    CIRCOS_CONF=//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
+
 
     icepop_degs_circos_uniform $INFILE \ 
         --go \
@@ -62,6 +64,7 @@ in your main path. Typical use looks like this in Bash script:
         -circos_dir $CIRCOS_DIR
 
     cd $CIRCOS_DIR
+    cp -r $CIRCOS_CONF .
     circos -param random_string='image' -conf ./etc/circos-medium.conf
 
 
