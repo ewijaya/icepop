@@ -124,7 +124,8 @@ def main():
             cpop_score_df.reset_index(inplace=True)
             cpop_score_df.to_excel(outfile,index=False,float_format='%.3f')
         elif suff in ['svg','jpg','png']:
-            dc.bar_plot(cpop_score_df, outfile=outfile, title=sample_name,ymin=0, ymax=0.5, y_thres = cpop_thres )
+            # dc.bar_plot(cpop_score_df, outfile=outfile, title=sample_name,ymin=0, ymax=0.5, y_thres = cpop_thres )
+            dc.bar_plot_facet(cpop_score_df, outfile=outfile )
         elif outfile == 'stdout':
             print  cpop_score_df
         else:
