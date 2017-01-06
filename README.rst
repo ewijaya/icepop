@@ -14,12 +14,9 @@ ICEPOP Is best installed via `pip <https://pip.pypa.io/en/stable/>`_ (highly rec
 
     $ pip install git+https://github.com/ewijaya/icepop.git 
 
-or 
+or:: 
 
     $ pip install git+git://github.com/ewijaya/icepop.git
-
-
-
 
 You may also opt to use your operating system's package manager; the package
 is typically called ``icepop`` or ``python-icepop``. E.g.::
@@ -31,6 +28,5 @@ is typically called ``icepop`` or ``python-icepop``. E.g.::
 Alternative access 
 ==================
 * `Web Application <https://sysimg.ifrec.osaka-u.ac.jp/icepop/>`_
-* `PyPi <https://pypi.python.org/pypi/icepop/>`_
 * `API documentation <https://sysimg.ifrec.osaka-u.ac.jp/icepop/static//apidoc/html/index.html>`_
 
