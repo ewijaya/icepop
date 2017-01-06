@@ -10,6 +10,7 @@ __copyright__ = "Copyright 2015"
 import csv
 import json
 import argparse
+import pandas as pd
 import sys  
 import os
 # To be removed later
@@ -105,30 +106,50 @@ def main():
         print foldchange_range
         # This full enumeration is mainly used for web app
         eo.enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
-                            outfilename = outfile,  gene_count=gene_count,
+                            outfilename = outfile,  gene_count=gene_count, \
                             logscale=logscale)
 
     else:
-        sample_ct_generank_dict, cpop_score_df, thres_dict, gene_x_ctypedf = cp.deg_cellpopscore_generank(cellpop_df,indf, fclim=fc_lim,gene_count=False,logscale=False,cpop_thres='q1')
-        sample_name = cpop_score_df.columns.values.tolist()[0]
+        sample_ct_generank_dict, cpop_score_df, thres_dict, gene_x_ctypedf = cp.deg_cellpopscore_generank(cellpop_df,indf, fclim=fc_lim,gene_count=False,logscale=False,cpop_thres='q1std')
+        sample_names = cpop_score_df.columns.values.tolist()
+
+        sufflist = ['svg', 'jpg', 'png', 'tsv', 'xlsx', 'xls']
+
+        sr_dict = {}
+        for sample_name in sample_names:
+            score_list = cpop_score_df[sample_name]
+            sample_resp_score = cp.sample_response_score(score_list, method="q1std")
+            sr_dict[sample_name] = sample_resp_score
+            sample_resp_score   = "{:.3f}".format(sample_resp_score)
+            cpop_thres          = thres_dict[sample_name]
+            cpop_thres          = "{:.3f}".format(cpop_thres)
+            if suff in ['svg','jpg','png']:
+                ntitle = sample_name + " (CTR=" + cpop_thres + "/SR=" + sample_resp_score + ")"
+                outfile_parts = outfile.split(".")
+                outfile_parts.insert(-1, sample_name)
+                sample_outfile =  ".".join(outfile_parts)
+                sample_cpop_score_df = cpop_score_df[[sample_name]]
+                dc.bar_plot(sample_cpop_score_df, outfile=sample_outfile, title=ntitle,ymin=0, ymax=0.5, y_thres = cpop_thres )
+            
+
+        all_thres_df = pd.DataFrame.from_dict({'Cell type response threshold':thres_dict, 'Sample response':sr_dict}, orient='index')
+        ncpop_score_df = pd.concat([cpop_score_df, all_thres_df])
+        ncpop_score_df.index.names = ['Cell_type/CRT/SR']
+        ncpop_score_df.reset_index(inplace=True)
+
+
+        sample_name = sample_names[0]
         cpop_thres = thres_dict[sample_name]
 
         if suff == "json":
             sys.stderr.write("JSON output only available when -fclim is off.\n")
         elif suff == "tsv":
-            cpop_score_df.index.names = ['Cell_type']
-            cpop_score_df.reset_index(inplace=True)
-            cpop_score_df.to_csv(outfile,sep="\t",index=False,float_format='%.3f')
+            ncpop_score_df.to_csv(outfile,sep="\t",index=False,float_format='%.3f')
         elif suff == "xlsx" or  suff == 'xls':
-            cpop_score_df.index.names = ['Cell_type']
-            cpop_score_df.reset_index(inplace=True)
-            cpop_score_df.to_excel(outfile,index=False,float_format='%.3f')
-        elif suff in ['svg','jpg','png']:
-            # dc.bar_plot(cpop_score_df, outfile=outfile, title=sample_name,ymin=0, ymax=0.5, y_thres = cpop_thres )
-            dc.bar_plot_facet(cpop_score_df, outfile=outfile )
+            ncpop_score_df.to_excel(outfile,index=False,float_format='%.3f')
         elif outfile == 'stdout':
-            print  cpop_score_df
-        else:
+            print  ncpop_score_df
+        elif suff not in sufflist:
             sys.stderr.write("No output is created.\n")
             sys.stderr.write("Please use one of these suffixes in the output file name: svg, jpg, png, tsv, xlsx, xls.\n")
 
