@@ -74,7 +74,7 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2, y_thres=None):
                           fontsize = 30,\
                           legend=True,
                           ylim = (ymin,ymax),
-                          subplots=False,
+                          subplots=True,
                           zorder=2)
 
     ax = plt.gca()
