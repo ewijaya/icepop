@@ -18,11 +18,12 @@ or::
 
     $ pip install git+git://github.com/ewijaya/icepop.git
 
-You may also opt to use your operating system's package manager; the package
-is typically called ``icepop`` or ``python-icepop``. E.g.::
+ 
+Examples
+========
 
-    $ sudo apt-get install icepop
-
+Calculating immune response score from DEGs (in CSV, TSV or Excel file).
+Make the output as a plot.
 
 
 Alternative access 
