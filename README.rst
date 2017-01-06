@@ -22,9 +22,26 @@ or::
 Examples
 ========
 
-Calculating immune response score from DEGs (in CSV, TSV or Excel file).
-Make the output as a plot.
+Calculating immune response score from DEGs
+-------------------------------------------
+The input should be either in form of `CSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.csv>`_, `TSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.tsv>`_ or `Excel <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.xlsx>`_ files.
 
+
+The results can be in the form of table or plot. This are determined by the
+suffix of the output file.
+
+To create plot::
+
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.jpg
+
+
+The command will produce individual plots depending on the number of samples.
+To create table::
+
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.tsv
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.xlsx
+
+Suffixes of the output should either one of these: 'svg', 'jpg', 'png', 'tsv', 'xlsx', 'xls'.
 
 Alternative access 
 ==================
