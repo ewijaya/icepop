@@ -113,9 +113,6 @@ def main():
         sample_name = cpop_score_df.columns.values.tolist()[0]
         cpop_thres = thres_dict[sample_name]
 
-        # nof_genes_dict, cpop_score_df = cp.deg_cellpopscore_df(cellpop_df, indf, fclim=fc_lim, \
-        #                     gene_count=gene_count, logscale=logscale)
-        # print cpop_score_df
         if suff == "json":
             sys.stderr.write("JSON output only available when -fclim is off.\n")
         elif suff == "tsv":

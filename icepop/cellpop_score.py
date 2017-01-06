@@ -126,6 +126,7 @@ def sample_response_score(score_list,method=None):
     cpop_thres_ct_prod = cpop_thres * nof_cell_type 
 
     sample_response = 0
+    # Remove warnings
     if cpop_thres_ct_prod != 0:
         sample_response = -1 * np.log(cpop_thres_ct_prod)
     

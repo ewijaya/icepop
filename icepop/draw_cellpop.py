@@ -72,7 +72,7 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2, y_thres=None):
                           color = tableau10, \
                           width=0.7,\
                           fontsize = 30,\
-                          legend=False,
+                          legend=True,
                           ylim = (ymin,ymax),
                           subplots=False,
                           zorder=2)
@@ -86,7 +86,6 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2, y_thres=None):
     plt.xlabel("")
     plt.ylabel("Score", fontsize=30, fontweight="bold")
     fig = barplot.get_figure()
-    fig.suptitle(title,fontsize=30,fontweight="bold")
     fig.savefig(outfile)
     plt.close()
     return
