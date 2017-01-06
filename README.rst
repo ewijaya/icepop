@@ -9,14 +9,15 @@ normalize, and plot the data using command line interface.
 
 Installation
 ============
-ICEPOP Is best installed via `pip <https://pip.pypa.io/en/stable/>`_ (highly recommended) or 
-`easy_install <https://wiki.python.org/moin/CheeseShopTutorial>`_ (older, but still works fine)::
+ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ through
+one of the following commands::
 
     $ pip install git+https://github.com/ewijaya/icepop.git 
 
 or:: 
 
     $ pip install git+git://github.com/ewijaya/icepop.git
+    $ pip install git+git://github.com/ewijaya/icepop.git --upgrade
 
  
 Examples
@@ -25,9 +26,7 @@ Examples
 Calculating immune response score from DEGs
 -------------------------------------------
 The input should be either in form of `CSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.csv>`_, `TSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.tsv>`_ or `Excel <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.xlsx>`_ files.
-
-
-The results can be in the form of table or plot. This are determined by the
+The results can be in the form of table or plot. They are determined by the
 suffix of the output file.
 
 To create plot::
@@ -42,6 +41,31 @@ To create table::
     $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.xlsx
 
 Suffixes of the output should either one of these: 'svg', 'jpg', 'png', 'tsv', 'xlsx', 'xls'.
+
+
+Circos plot for unearthing the gene features in immune cells
+------------------------------------------------------------
+This script produces the circular plot that links feature
+genes among the samples.
+
+
+It assumes that `Circos <http://www.circos.ca/>`_  is already installed
+in your main path. Typical use looks like this in Bash script:
+
+.. code-block:: bash 
+
+    INFILE=input_type1_degs.tsv
+    CIRCOS_DIR=your_circos_dir
+
+    icepop_degs_circos_uniform $INFILE \ 
+        --go \
+        -fclim 2 \
+        -cv_organ sp \
+        -circos_dir $CIRCOS_DIR
+
+    cd $CIRCOS_DIR
+    circos -param random_string='image' -conf ./etc/circos-medium.conf
+
 
 Alternative access 
 ==================
