@@ -29,14 +29,14 @@ suffix of the output file.
 
 To create plot::
 
-    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.jpg
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.jpg
 
 
 The command will produce individual plots depending on the number of samples.
 To create table::
 
-    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.tsv
-    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -g no_pref  -o output_file.xlsx
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.tsv
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.xlsx
 
 Suffixes of the output should either one of these: 'svg', 'jpg', 'png', 'tsv', 'xlsx', 'xls'.
 
