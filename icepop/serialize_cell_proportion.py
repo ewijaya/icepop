@@ -33,6 +33,26 @@ def make_pickle(indict):
     output.close()
     return    
 
+def make_iris_expr_cpop_phendict(out_type="HDF5"):
+    """
+    From original file, we create
+    a HDF5 that list all the cell population and phenotype as
+    data frame
+    """
+    cell_prop_file = './proportion_data/IRIS.csv'
+    df              = pd.read_csv(cell_prop_file,sep=",",header=None, index_col = 1,  nrows=2, skiprows=[4], comment="#")
+    df              = df.T
+    df.columns      = ["celltype", "phenotype"]
+    remove_list     = ["DUMMY","Probes","Genes"]
+    df              = df[~df['celltype'].isin(remove_list)]
+    df["organs"]    = "PBMC"
+    df              = df[ ["celltype","organs","phenotype"] ]
+    hdf_output = "./proportion_data/iris_human_celltype_phenotype.h5"
+    df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
+    # print df
+    return
+
+
 def make_immgen_expr_cpop_phendict(out_type="HDF5"):
     """
     From original file, we create
@@ -46,6 +66,23 @@ def make_immgen_expr_cpop_phendict(out_type="HDF5"):
     df.reset_index(drop=True,inplace=True)
     hdf_output = "./proportion_data/immgen_mouse_celltype_phenotype.h5"
     df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
+    return
+
+def make_iris_expr_phenotype(out_type="HDF5"):
+    """
+    Obtain gene expression without summarizing, 
+    i.e. include all phenotypes.
+    """
+    cell_prop_file  = './proportion_data/IRIS.csv'
+    df              = pd.read_csv(cell_prop_file,sep=",", skiprows=[1], comment="#")
+    colnames        = df.columns.values.tolist()
+    wanted_colnames = [colnames[4]] + colnames[11:33]
+    new_df          = df[wanted_colnames]
+    new_df.columns  = ["Genes"] + colnames[11:33]
+    new_df          = new_df.copy()
+    new_df["Genes"] = new_df["Genes"].str.strip()
+    hdf_output = "./proportion_data/iris_human_expr_by_phenotype.h5"
+    new_df.to_hdf(hdf_output, 'fixed', mode='w', complib='zlib',complevel=2, append=False)
     return
     
 def make_immgen_expr_phenotype(out_type="HDF5"):
@@ -247,7 +284,9 @@ def main():
     # make_immgen_weight(out_type="HDF5")
     # make_immgen_weight(out_type="HDF5",group_by="organ")
 
-    make_iris(out_type="HDF5")
+    make_iris_expr_phenotype(out_type="HDF5")
+    # make_iris_expr_cpop_phendict(out_type="HDF5")
+    # make_iris(out_type="HDF5")
     # make_immgen(out_type="pickle")
     
     

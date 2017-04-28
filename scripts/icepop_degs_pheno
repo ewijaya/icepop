@@ -1,0 +1,154 @@
+#!/usr/bin/env python
+""" 
+Scripts for calculating cell population
+given differentially expressed genes.
+By default it enumerates result for various fold change
+threshold. Otherwise user can specify single fold change
+
+This is the spread version of  `icepop_degs scripts` 
+Instead of summarized cell types we show all the 
+phenotypes of the cell types.
+
+Image format (PNG,SVG,JPEG) is not supported
+
+Example code
+    ./icepop_degs_pheno /u21/ewijaya/cellpopulation_framework/testing/degs_based_analysis/input_type1_degs.tsv -s mouse -fclim 2 --verbose
+
+"""
+__author__    = "Edward Wijaya <ewijaya@gmail.com>"
+__copyright__ = "Copyright 2015"
+import csv
+import json
+import argparse
+import pandas as pd
+import sys  
+import os
+# To be removed later
+# sys.path.insert(0,"/Users/ewijaya-macmini-ifrec/Various_Projects/CellPopulation_Framework_in_making/icepop")
+sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+from icepop import draw_cellpop as dc
+from icepop import input_reader as ir
+from icepop import cellpop_score as cp
+from icepop import species_cell_proportion as scp
+from icepop import enumerate_output as eo
+from icepop import utils
+pd.set_option('expand_frame_repr',False)
+
+
+def float_or_str(value):
+    try:
+        return float(value)
+    except:
+        return value
+
+
+def main():
+    parser = argparse.ArgumentParser(description='''Cell population score for differentially expressed genes. A detailed version.''')
+    parser.add_argument("filename", nargs='?',help="DEGs file in TSV, CSV or Excel format") 
+    parser.add_argument("-s","-species",metavar="",help="species (mouse, human)",type=str,default='mouse')
+    parser.add_argument("-g","-organs",metavar="",help="organs ('no_pref','bone_marrow', etc)",type=str,default='no_pref')
+    parser.add_argument("-cv_organ",metavar="",help="organs ('no_pref','ln', 'lv','sp')",type=str,default='no_pref')
+    parser.add_argument("-o","-outfile",metavar="",help="output file in stdout, tsv, csv,  xlsx, xls format",type=str,default='stdout')
+    parser.add_argument("--verbose", help="verbose output",action="store_true")
+    parser.add_argument("-fclim", help="specify single fold change threshold",type=float_or_str,default="none")
+
+    args = parser.parse_args()
+    deg_infile = args.filename
+    species    = args.s
+    outfile    = args.o
+    organs     = args.g
+    fc_lim     = args.fclim
+    cv_filt_organ     = args.cv_organ
+    verbose    = args.verbose
+
+
+    if outfile == '':
+        outfile = None
+        
+    base, suff = None, None
+    if "." in outfile:
+        tmp_fnames = os.path.basename(outfile)
+        base, suff = tmp_fnames.split(".")
+
+    # Sanity check
+    if organs != 'no_pref' and species == "human":
+        sys.exit("Human has no organs based proportion data.")
+    elif verbose:
+        sys.stderr.write("================================================= \n")    
+        sys.stderr.write("Species               : "     +  str(species) +  "\n")    
+        sys.stderr.write("Input file            : "     +  deg_infile +  "\n")    
+        sys.stderr.write("Output file           : "     +  outfile +  "\n")    
+        sys.stderr.write("Organ                 : "     +  organs +  "\n")    
+        sys.stderr.write("CV_filt organ         : "     +  cv_filt_organ +  "\n")    
+        sys.stderr.write("Fold change threshold : "     +  str(fc_lim) +  "\n")    
+        sys.stderr.write("================================================= \n\n\n")    
+
+
+
+    # Get proportion table
+    cellpop_pheno_df, cp_pheno_table_df = None, None
+    if species == "mouse":
+        cellpop_pheno_df, cp_pheno_table_df = scp.get_pheno_prop_immgen()
+        if organs != 'no_pref':
+            new_cp_pheno_table_df = cp_pheno_table_df[cp_pheno_table_df["organs"] == organs]
+            sel_pheno_by_organ = new_cp_pheno_table_df["phenotype"].tolist()
+            new_cell_phen_col = ["Genes"] + sel_pheno_by_organ
+
+            # After filtering by organs
+            cellpop_pheno_df = cellpop_pheno_df[new_cell_phen_col]
+            cp_pheno_table_df = new_cp_pheno_table_df
+
+    else:
+        # No organs can be extracted from IRIS
+        cellpop_pheno_df, cp_pheno_table_df = scp.get_pheno_prop_iris()
+
+    fclim                               = fc_lim
+    indf                                = ir.read_file(deg_infile, mode="DEG") 
+    if cv_filt_organ != 'no_pref':
+        indf            = utils.cv_filter(indf, organ=cv_filt_organ)
+
+
+
+    # print cellpop_pheno_df.head()
+    # print cp_pheno_table_df.head()
+
+    # The actual calculation of icepop score
+    sample_ct_generank_dict, cpop_score_df, thres_dict, gene_x_ctypedf = \
+    cp.deg_cellpopscore_generank(cellpop_pheno_df, indf,\
+            fclim=fclim,gene_count=False,logscale=False,cpop_thres='q1')
+
+    sample_name = cpop_score_df.columns.values.tolist()[0]
+    cpop_thres = thres_dict[sample_name]
+
+
+    # Finalize
+    sample_names = cpop_score_df.columns.values.tolist()
+    phen_table_names = cp_pheno_table_df.columns.values.tolist()
+    ncolnames = phen_table_names + sample_names
+    merged_pheno_table_df = pd.merge(cpop_score_df, cp_pheno_table_df, left_index=True, right_on="phenotype")
+    merged_pheno_table_df = merged_pheno_table_df[ncolnames]
+
+    if outfile == "stdout":
+        print merged_pheno_table_df
+    elif suff == "xlsx" or suff == "xls":
+        sys.stderr.write("Process completed with the following output file: "     +  outfile +  "\n")    
+        merged_pheno_table_df.to_excel(outfile,index=False,float_format='%.3f')
+    elif suff == "csv": 
+        sys.stderr.write("Process completed with the following output file: "     +  outfile +  "\n")    
+        merged_pheno_table_df.to_csv(outfile,sep=",",index=False,float_format='%.3f')
+    elif suff == "tsv": 
+        sys.stderr.write("Process completed with the following output file: "     +  outfile +  "\n")    
+        merged_pheno_table_df.to_csv(outfile,sep="\t",index=False,float_format='%.3f')
+    elif suff not in sufflist:
+        sys.stderr.write("No output is created.\n")
+        sys.stderr.write("Please use one of these suffixes in the output file name:  tsv, csv, xlsx, xls.\n")
+    else:
+        print merged_pheno_table_df
+
+
+
+
+
+
+if __name__ == '__main__':
+    main()
