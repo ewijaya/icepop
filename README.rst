@@ -4,7 +4,7 @@ expressed genes (DEGs) or raw expression data. These APIs and scripts will let
 you have a fine grained control on the data analysis lacking in the web
 version. On top of the core immune cell population deconvolution, it allows
 you to download the raw data from NCBI GEO gene expression database,
-normalize, and plot the data using command line interface, etc.
+normalize, and plot the data using command line interface.
 
 
 Installation
