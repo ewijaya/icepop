@@ -11,7 +11,7 @@ import warnings
 
 setup(name='icepop',
       #version.release.build
-      version='1.3.8',
+      version='1.4.3',
       author='Edward Wijaya',
       description='Python package for analysing immune cell population in expressed genes',
       license='MIT License',
@@ -27,19 +27,20 @@ setup(name='icepop',
                         'seaborn' ],
       packages=['icepop'],
       package_data={'icepop':[
-                       'proportion_data/immgen_mouse_expr.h5',
-                       'proportion_data/immgen_mouse_expr_organ.h5',
+                       'proportion_data/immgen_mouse_celltype_phenotype.h5',
+                       'proportion_data/immgen_mouse_expr_by_phenotype.h5',
                        'proportion_data/immgen_mouse_organ.h5',
                        'proportion_data/immgen_mouse.h5',
                        'proportion_data/iris_human.h5',
-                       'proportion_data/iris_human_expr.h5',
+                       'proportion_data/mouse_organ_genes.cvfilter.h5',
                        'proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv',
-                       'proportion_data/IRIS.csv'
+                       'proportion_data/IRIS.csv',
+                       'circos_conf/etc/fonts/Arial.ttf',
+                       'circos_conf/etc/*.*'
                        ]},
      scripts=[ 'scripts/icepop_degs',
                'scripts/go_degs_cluster',
                'scripts/icepop_degs_cluster',
-               'scripts/icepop_pure' 
                ]
 
 )

@@ -97,7 +97,7 @@ def read_hdf_expr(species=None,organs=False):
         return out_df
 
 
-def read_hdf_pheno():
+def read_immgen_hdf_pheno():
     """
     Used for reading only phenotype granularity
     type of ImmGen data. It returns two
@@ -114,6 +114,22 @@ def read_hdf_pheno():
     out_cpphen_df = pd.read_hdf(cpphen_infile)
     return out_exp_df, out_cpphen_df
     
+def read_iris_hdf_pheno():
+    """
+    Used for reading only phenotype granularity
+    type of ImmGen data. It returns two
+    data frames: 1) scoring matrix; 2) phenotype celltype correspondence.
+    """
+    # With __file__ we set the relative path where we can
+    # access the proportion data, relative to this file.
+    tmp = os.path.abspath(__file__)
+    package_path = os.path.dirname(tmp)
+    exp_infile    = os.path.join(package_path, "proportion_data/iris_human_expr_by_phenotype.h5")
+    cpphen_infile = os.path.join(package_path, "proportion_data/iris_human_celltype_phenotype.h5")
+
+    out_exp_df = pd.read_hdf(exp_infile)
+    out_cpphen_df = pd.read_hdf(cpphen_infile)
+    return out_exp_df, out_cpphen_df
 
 def load_hdf_cvfilter():
     """
@@ -164,8 +180,15 @@ def main():
     """Description of main
     
     """
-    outdf = load_hdf_cvfilter()
-    print outdf
+    immgen_exp_pheno_df, immgen_pheno_df = read_immgen_hdf_pheno()
+    print immgen_exp_pheno_df.head()
+    print immgen_pheno_df.head()
+    print "---" 
+    iris_exp_pheno_df, iris_pheno_df = read_iris_hdf_pheno()
+    print iris_exp_pheno_df.head()
+    print iris_pheno_df.head()
+    # outdf = load_hdf_cvfilter()
+    # print outdf
     
 
 if __name__ == '__main__':

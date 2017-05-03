@@ -7,6 +7,7 @@ __copyright__ = "Copyright 2015"
 import json
 import math
 import numpy as np
+import warnings
 import sys
 from collections import defaultdict
 import pandas as pd
@@ -121,7 +122,13 @@ def sample_response_score(score_list,method=None):
     
     cpop_thres = find_threshold(score_list, method=method)
     nof_cell_type = len(score_list)
-    sample_response = -1 * np.log(cpop_thres * nof_cell_type)
+
+    cpop_thres_ct_prod = cpop_thres * nof_cell_type 
+
+    sample_response = 0
+    # Remove warnings
+    if cpop_thres_ct_prod != 0:
+        sample_response = -1 * np.log(cpop_thres_ct_prod)
     
     return sample_response
 
