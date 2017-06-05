@@ -1,5 +1,5 @@
-ICEPOP <img src="icepop_logo_full.png" align="right" width="80%" height="80%"  />
-=================================================================================
+ICEPOP <img src="icepop_logo_full.png" align="right"/>
+======================================================
 Immune CEll POPulation
 
 
