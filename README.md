@@ -1,10 +1,11 @@
 ICEPOP <img src="icepop_logo_full.png" align="right" />
 =======================================================
+Immune CEll POPulation
 
 
 Overview
 --------
-ICEPOP (Immune CEll POPulation) is the method for estimating immune cell
+ICEPOP is the method for estimating immune cell
 population in the expressed genes. It enable analysis of differentially
 expressed genes (DEGs) or raw expression data. These APIs and scripts will let
 you have a fine grained control on the data analysis lacking in the web
@@ -70,5 +71,5 @@ in your main path. Typical use looks like this in Bash script:
 
 Alternative access 
 ==================
-* Web Application [[main]](https://vdynamics.shinyapps.io/icepop/) 
+* Web Application [[main](https://vdynamics.shinyapps.io/icepop/)][[mirror](https://ewijaya.shinyapps.io/icepop/)]
 
