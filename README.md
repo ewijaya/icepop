@@ -5,7 +5,7 @@ Immune CEll POPulation
 
 Overview
 --------
-ICEPOP is the method for estimating immune cell
+A method for estimating immune cell
 population in the expressed genes. It enable analysis of differentially
 expressed genes (DEGs) or raw expression data. These APIs and scripts will let
 you have a fine grained control on the data analysis lacking in the web
