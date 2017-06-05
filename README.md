@@ -1,6 +1,7 @@
 ICEPOP <img src="icepop_logo_full.png" align="right" />
 =======================================================
 
+
 Overview
 --------
 ICEPOP (Immune CEll POPulation) is the method for estimating immune cell
@@ -14,7 +15,7 @@ normalize, and plot the data using command line interface.
 
 Installation
 ------------
-ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ through
+ICEPOP is best installed via [pip](https://pip.pypa.io/en/stable/) through
 one of the following commands::
 
     $ pip install git+https://github.com/ewijaya/icepop.git 
@@ -26,7 +27,7 @@ one of the following commands::
 
 Calculating immune response score from DEGs
 -------------------------------------------
-The input should be either in form of `CSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.csv>`_, `TSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.tsv>`_ or `Excel <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.xlsx>`_ files.
+The input should be either in form of CSV or TSV files.
 The results can be in the form of table or plot. They are determined by the
 suffix of the output file.
 
@@ -48,10 +49,9 @@ Circos plot for unearthing the gene features in immune cells
 ------------------------------------------------------------
 This script produces the circular plot that links feature
 genes among the samples.
-It assumes that `Circos <http://www.circos.ca/>`_  is already installed
+It assumes that [Circos](http://www.circos.ca/)  is already installed
 in your main path. Typical use looks like this in Bash script:
 
-.. code-block:: bash 
 
     INFILE=input_type1_degs.tsv
     CIRCOS_DIR=your_circos_dir
@@ -70,6 +70,5 @@ in your main path. Typical use looks like this in Bash script:
 
 Alternative access 
 ==================
-* `Web Application <https://>`_
-* `API documentation <https://sysimg.ifrec.osaka-u.ac.jp/icepop/static//apidoc/html/index.html>`_
+* Web Application [[main]](https://vdynamics.shinyapps.io/icepop/) 
 
