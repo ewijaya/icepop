@@ -1,5 +1,3 @@
-Examples
---------
 ICEPOP <img src="icepop_logo_full.png" align="right" />
 =======================================================
 
