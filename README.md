@@ -26,7 +26,7 @@ one of the following commands::
 
 
 Alternative access 
-==================
+------------------
 * Web application [[main](https://vdynamics.shinyapps.io/icepop/)][[mirror](https://ewijaya.shinyapps.io/icepop/)]
  
 
