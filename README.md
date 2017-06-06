@@ -24,6 +24,10 @@ one of the following commands::
     $ pip install git+git://github.com/ewijaya/icepop.git
     $ pip install git+git://github.com/ewijaya/icepop.git --upgrade
 
+
+Alternative access 
+==================
+* Web application [[main](https://vdynamics.shinyapps.io/icepop/)][[mirror](https://ewijaya.shinyapps.io/icepop/)]
  
 
 Calculating immune response score from DEGs
@@ -69,7 +73,4 @@ in your main path. Typical use looks like this in Bash script:
     circos -param random_string='image' -conf ./etc/circos-medium.conf
 
 
-Alternative access 
-==================
-* Web Application [[main](https://vdynamics.shinyapps.io/icepop/)][[mirror](https://ewijaya.shinyapps.io/icepop/)]
 
