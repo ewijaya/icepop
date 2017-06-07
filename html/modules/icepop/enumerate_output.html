@@ -1,0 +1,425 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.enumerate_output &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.enumerate_output</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Given a fold change threshold, </span>
+<span class="sd">we enumerate all the answers, per sample.</span>
+<span class="sd">The output later will be used for </span>
+<span class="sd">JavaScript processing at the fron end.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015, The Cool Project&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">targetmine_query_urllib</span> <span class="k">as</span> <span class="nn">tgm</span>
+<span class="kn">import</span> <span class="nn">species_cell_proportion</span> <span class="k">as</span> <span class="nn">scp</span>
+<span class="kn">import</span> <span class="nn">cellpop_score</span> <span class="k">as</span> <span class="nn">cp</span>
+<span class="kn">import</span> <span class="nn">cluster_cellpop_score</span> <span class="k">as</span> <span class="nn">ccp</span>
+<span class="kn">import</span> <span class="nn">input_reader</span> <span class="k">as</span> <span class="nn">ir</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+
+<div class="viewcode-block" id="enumerate_geneclust_go_output"><a class="viewcode-back" href="../../icepop.html#icepop.enumerate_output.enumerate_geneclust_go_output">[docs]</a><span class="k">def</span> <span class="nf">enumerate_geneclust_go_output</span><span class="p">(</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf</span><span class="p">,</span> <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> \
+        <span class="n">outfilename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fc_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>\
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;ward&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="s2">&quot;euclidean&quot;</span><span class="p">,</span>\
+        <span class="n">species</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">pvalim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">cormeth</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">immune</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>\
+        <span class="n">tsv</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enumerate all the gene cluster cell population score given </span>
+<span class="sd">    the range of fold change threshold. </span>
+<span class="sd">    This file output is later to be used to make JavaScript rendering, modeled according to:</span>
+
+<span class="sd">    </span>
+<span class="sd">    :param cellpopdf: Cell population data frame.</span>
+<span class="sd">    :param degdf: DEGs data frame.</span>
+<span class="sd">    :param fc_range: list of floats, range of fold change </span>
+<span class="sd">    :param logscale: boolean, transform fold change to logscale.</span>
+<span class="sd">                      This does not affect the result substansially.</span>
+<span class="sd">    :param gene_count: boolean, normalization method. </span>
+<span class="sd">                      If &#39;True&#39;, divide by sum of product. </span>
+<span class="sd">                      The total weight will have to result to 1.00.</span>
+<span class="sd">    :param outfilename: output filename. The output type depends on the extension.</span>
+<span class="sd">                    They are (&quot;.json&quot;, &quot;.tsv&quot;)</span>
+<span class="sd">    :param method: string(&#39;complete&#39;,&#39;average&#39;,&#39;ward&#39;)</span>
+<span class="sd">    :param dist: string(&#39;euclidean&#39;,&#39;manhattan&#39;,&#39;pearsond&#39;)</span>
+<span class="sd">    :param k: integer, number of cluster</span>
+
+<span class="sd">    :param gene_ontology: boolean, whether or not to run GO.</span>
+
+<span class="sd">    The following parameters only take effect when gene_ontology is set to true.</span>
+
+<span class="sd">    :param species: string(&#39;mouse&#39;,&#39;human&#39;,&#39;rat&#39;) </span>
+<span class="sd">    :param useSymbol: string(&#39;true&#39;,&#39;false&#39;), whether query is done using gene</span>
+<span class="sd">                      symbol, otherwise ProbeID</span>
+<span class="sd">    :param pvalim: string, lowerbound of P-value for a GO term to be</span>
+<span class="sd">                      displayed.</span>
+<span class="sd">    :param cormeth: string(&#39;HOLM_BONFERRONI&#39;,&#39;BENJAMINI_HOCHBERG&#39;,&#39;BONFERRONI&#39;)</span>
+<span class="sd">    :param immune: boolean, show only immune related GO terms.</span>
+<span class="sd">    :param verbose: boolean, display processing stage.</span>
+
+<span class="sd">    :returns: JSON format output for both GO as list of list. </span>
+
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import enumerate_output as eo</span>
+<span class="sd">    &gt;&gt;&gt; out_go_json = &quot;input_cluster_type1_degs.large.go.json&quot; </span>
+<span class="sd">    &gt;&gt;&gt; eo.enumerate_geneclust_go_output(cellpop_df, indf,</span>
+<span class="sd">            &gt;&gt;&gt; fc_range=foldchange_range, outfilename = out_go_json,</span>
+<span class="sd">            &gt;&gt;&gt; gene_count=True, logscale=False,k=nof_clust, method=&quot;ward&quot;,</span>
+<span class="sd">            &gt;&gt;&gt; dist=&quot;euclidean&quot;,</span>
+<span class="sd">            &gt;&gt;&gt; species=&#39;mouse&#39;,pvalim=1.00,cormeth=&quot;HOLM_BONFERRONI&quot;,immune=True)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">outerdict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">go_lol</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fc_lim</span> <span class="ow">in</span> <span class="n">fc_range</span><span class="p">:</span>
+
+        <span class="n">sample_names</span> <span class="o">=</span> <span class="n">degdf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">sample_names</span> <span class="o">=</span> <span class="n">sample_names</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">selected_degdf</span> <span class="o">=</span> <span class="n">degdf</span><span class="p">[(</span><span class="n">degdf</span><span class="p">[</span><span class="n">sample_names</span><span class="p">]</span><span class="o">&gt;</span><span class="n">fc_lim</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">nof_final_samples</span> <span class="o">=</span> <span class="n">selected_degdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+        <span class="c1"># This condition is important, to</span>
+        <span class="c1"># prevent crash at clustering.py on AgglomerativeClustering</span>
+        <span class="c1"># because final genes count is less than number of cluster.</span>
+        <span class="k">if</span> <span class="n">nof_final_samples</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Skip clustering for fold change:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fc_lim</span><span class="p">)</span> <span class="o">+</span>  <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+            
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Clustering for foldchange: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fc_lim</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Number of genes after fold change filter:&quot;</span> <span class="o">+</span>  <span class="n">selected_degdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">full_clust_cpopdf</span><span class="p">,</span> <span class="n">full_clust_degdf</span> <span class="o">=</span> \
+        <span class="n">ccp</span><span class="o">.</span><span class="n">cluster_cellpop_score</span><span class="p">(</span><span class="n">cellpopdf</span><span class="o">=</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf</span><span class="o">=</span><span class="n">degdf</span><span class="p">,</span>\
+                <span class="n">fclim</span><span class="o">=</span><span class="n">fc_lim</span><span class="p">,</span><span class="n">gene_count</span><span class="o">=</span><span class="n">gene_count</span><span class="p">,</span><span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>\
+                <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="n">dist</span><span class="p">)</span>
+
+        <span class="c1">#------------------------- </span>
+        <span class="c1"># GO for cluster </span>
+        <span class="c1">#------------------------- </span>
+        <span class="c1"># sys.stderr.write(&quot;Process GO analysis for GO\n&quot;)</span>
+        <span class="n">tmp_fcddf</span> <span class="o">=</span> <span class="n">full_clust_degdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">tmpcn</span> <span class="o">=</span> <span class="n">tmp_fcddf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="c1"># rename column for consistency</span>
+        <span class="n">tmp_fcddf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;probe&#39;</span>
+        <span class="n">tmp_fcddf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;gene&#39;</span>
+
+        <span class="n">tmp_fcddf</span> <span class="o">=</span> <span class="n">tmp_fcddf</span><span class="p">[[</span><span class="s2">&quot;ClusterID&quot;</span><span class="p">,</span><span class="s2">&quot;gene&quot;</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">clusterid</span><span class="p">,</span> <span class="n">tdf</span> <span class="ow">in</span> <span class="n">tmp_fcddf</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s1">&#39;ClusterID&#39;</span><span class="p">]):</span>
+            <span class="n">genelist</span> <span class="o">=</span> <span class="n">tdf</span><span class="p">[</span><span class="s1">&#39;gene&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="c1"># Make sure the list only contain string</span>
+            <span class="n">genelist</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">basestring</span><span class="p">),</span> <span class="n">genelist</span><span class="p">)</span>
+            <span class="n">genelist_str</span> <span class="o">=</span>  <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">genelist</span><span class="p">)</span>
+            <span class="c1"># print clusterid, genelist_str</span>
+            <span class="k">for</span> <span class="n">vals</span> <span class="ow">in</span> <span class="n">tgm</span><span class="o">.</span><span class="n">get_tgm_data</span><span class="p">(</span><span class="n">genelist_str</span><span class="p">,</span><span class="n">immune</span><span class="o">=</span><span class="n">immune</span><span class="p">,</span> <span class="n">species</span><span class="o">=</span><span class="n">species</span><span class="p">,</span> \
+                    <span class="n">useSymbol</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="p">,</span><span class="n">pvalim</span><span class="o">=</span><span class="n">pvalim</span><span class="p">,</span><span class="n">cormeth</span><span class="o">=</span><span class="n">cormeth</span><span class="p">):</span>
+
+                <span class="n">theme</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">pval</span><span class="p">,</span> <span class="n">genelist</span> <span class="o">=</span> <span class="n">vals</span>
+                <span class="n">nvals</span> <span class="o">=</span> <span class="p">[</span><span class="n">clusterid</span><span class="p">,</span> <span class="n">fc_lim</span><span class="p">,</span> <span class="n">term</span><span class="p">,</span> <span class="n">pval</span><span class="p">,</span> <span class="n">genelist</span><span class="p">]</span>
+                <span class="n">go_lol</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nvals</span><span class="p">)</span>
+                <span class="c1"># print &quot;\t&quot;, nvals</span>
+
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Cluster ID&quot;</span><span class="p">,</span><span class="s2">&quot;Fold Change&quot;</span><span class="p">,</span><span class="s2">&quot;GO Term&quot;</span><span class="p">,</span><span class="s2">&quot;P-value&quot;</span><span class="p">,</span><span class="s2">&quot;Gene List&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">outfilename</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">outdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">go_lol</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">outdf</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">outfilename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">extension</span><span class="o">==</span><span class="s2">&quot;.tsv&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                 <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Creating TSV file</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">outdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">go_lol</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="c1"># print outdf.head()</span>
+            <span class="n">outdf</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">outfilename</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">float_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%.3f</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                 <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Creating JSON file</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Write cell population cluster to JSON</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfilename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">jsonout</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">go_lol</span><span class="p">,</span> <span class="n">jsonout</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="enumerate_geneclust_output"><a class="viewcode-back" href="../../icepop.html#icepop.enumerate_output.enumerate_geneclust_output">[docs]</a><span class="k">def</span> <span class="nf">enumerate_geneclust_output</span><span class="p">(</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf</span><span class="p">,</span> <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> \
+        <span class="n">outfilename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fc_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>\
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;ward&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="s2">&quot;euclidean&quot;</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enumerate all the gene cluster cell population score given </span>
+<span class="sd">    the range of fold change threshold. </span>
+<span class="sd">    </span>
+<span class="sd">    :param cellpopdf: Cell population data frame.</span>
+<span class="sd">    :param degdf: DEGs data frame.</span>
+<span class="sd">    :param fc_range: list of floats, range of fold change </span>
+<span class="sd">    :param logscale: boolean, transform fold change to logscale.</span>
+<span class="sd">                      This does not affect the result substansially.</span>
+<span class="sd">    :param gene_count: boolean, normalization method. </span>
+<span class="sd">                      If &#39;True&#39;, divide by sum of product. </span>
+<span class="sd">                      The total weight will have to result to 1.00.</span>
+<span class="sd">    :param outfilename: output filename.</span>
+<span class="sd">    :param method: string(&#39;complete&#39;,&#39;average&#39;,&#39;ward&#39;)</span>
+<span class="sd">    :param dist: string(&#39;euclidean&#39;,&#39;manhattan&#39;,&#39;pearsond&#39;)</span>
+<span class="sd">    :param k: integer, number of cluster</span>
+
+
+<span class="sd">    :returns: JSON format output for both cell population.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import enumerate_output as eo</span>
+<span class="sd">    &gt;&gt;&gt; out_json = &quot;input_cluster_type1_degs.large.json&quot; </span>
+<span class="sd">    &gt;&gt;&gt; nof_clust        = 15</span>
+<span class="sd">    &gt;&gt;&gt; foldchange_range = [1.5,2,2.5,3,3.5,4,4.5,5]</span>
+<span class="sd">    &gt;&gt;&gt; eo.enumerate_geneclust_output(cellpop_df, indf,</span>
+<span class="sd">            &gt;&gt;&gt; fc_range=foldchange_range, outfilename = out_json,</span>
+<span class="sd">            &gt;&gt;&gt; gene_count=True,  logscale=False,k=nof_clust, method=&quot;ward&quot;,</span>
+<span class="sd">            &gt;&gt;&gt; dist=&quot;euclidean&quot;)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">lod</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">fc_range</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">fc_lim</span> <span class="ow">in</span> <span class="n">fc_range</span><span class="p">:</span>
+        <span class="c1"># print fc_lim</span>
+        <span class="n">outerdict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">sample_names</span> <span class="o">=</span> <span class="n">degdf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">sample_names</span> <span class="o">=</span> <span class="n">sample_names</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">selected_degdf</span> <span class="o">=</span> <span class="n">degdf</span><span class="p">[(</span><span class="n">degdf</span><span class="p">[</span><span class="n">sample_names</span><span class="p">]</span><span class="o">&gt;</span><span class="n">fc_lim</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)]</span>
+        <span class="n">nof_final_samples</span> <span class="o">=</span> <span class="n">selected_degdf</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
+        <span class="c1"># This condition is important, to</span>
+        <span class="c1"># prevent crash at clustering.py on AgglomerativeClustering</span>
+        <span class="k">if</span> <span class="n">nof_final_samples</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+            <span class="k">continue</span>
+            
+        <span class="n">full_clust_cpopdf</span><span class="p">,</span> <span class="n">full_clust_degdf</span> <span class="o">=</span> \
+        <span class="n">ccp</span><span class="o">.</span><span class="n">cluster_cellpop_score</span><span class="p">(</span><span class="n">cellpopdf</span><span class="o">=</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf</span><span class="o">=</span><span class="n">degdf</span><span class="p">,</span>\
+                <span class="n">fclim</span><span class="o">=</span><span class="n">fc_lim</span><span class="p">,</span><span class="n">gene_count</span><span class="o">=</span><span class="n">gene_count</span><span class="p">,</span><span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>\
+                <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="n">dist</span><span class="p">)</span>
+
+        <span class="c1">#------------------------- </span>
+        <span class="c1"># Cell population  score for cluster</span>
+        <span class="c1">#------------------------- </span>
+        <span class="n">tmp_df</span> <span class="o">=</span> <span class="n">full_clust_cpopdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">tmp_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;Cluster&quot;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">mdict</span> <span class="o">=</span> <span class="n">tmp_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="n">tmp_list</span>  <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">celltype</span><span class="p">,</span> <span class="n">clustval</span> <span class="ow">in</span> <span class="n">mdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">clustid</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">clustval</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">xy_name</span> <span class="o">=</span> <span class="n">celltype</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">clustid</span><span class="p">)</span>
+                <span class="n">tmp_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;celltype;clustid&#39;</span><span class="p">:</span><span class="n">xy_name</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:{</span><span class="s1">&#39;zscore&#39;</span><span class="p">:</span><span class="n">val</span><span class="p">}})</span>
+        <span class="n">lod</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;threshold&#39;</span><span class="p">:</span><span class="n">fc_lim</span><span class="p">,</span> <span class="s1">&#39;heatdata&#39;</span><span class="p">:</span><span class="n">tmp_list</span><span class="p">})</span>
+
+    <span class="c1"># Write cell population cluster to JSON</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfilename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">jsonout</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">lod</span><span class="p">,</span> <span class="n">jsonout</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="enumerate_output"><a class="viewcode-back" href="../../icepop.html#icepop.enumerate_output.enumerate_output">[docs]</a><span class="k">def</span> <span class="nf">enumerate_output</span><span class="p">(</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf</span><span class="p">,</span> <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> \
+        <span class="n">outfilename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fc_range</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enumerate all the cell population score given </span>
+<span class="sd">    the range of fold change threshold.</span>
+<span class="sd">    </span>
+<span class="sd">    :param cellpopdf: Cell population data frame.</span>
+<span class="sd">    :param degdf: DEGs data frame.</span>
+
+<span class="sd">    :param fc_range: list of floats, range of fold change </span>
+<span class="sd">    :param logscale: boolean, transform fold change to logscale.</span>
+<span class="sd">                  This does not affect the result substansially.</span>
+<span class="sd">    :param gene_count: boolean, normalization method. </span>
+<span class="sd">                  If &#39;True&#39;, divide by sum of product. </span>
+<span class="sd">                  The total weight will have to result to 1.00.</span>
+<span class="sd">    :param outfilename: output filename.</span>
+
+<span class="sd">    :returns: JSON format output.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import enumerate_output as eo</span>
+<span class="sd">    &gt;&gt;&gt; foldchange_range =[1.5,2,2.5,3,3.5,4,4.5,5]</span>
+<span class="sd">    &gt;&gt;&gt; out_json = &quot;input_type1_degs.large.json&quot;</span>
+<span class="sd">    &gt;&gt;&gt; eo.enumerate_output(cellpop_df, indf, fc_range = foldchange_range, outfilename = out_json,  gene_count=True, logscale=False)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">final</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fc_lim</span> <span class="ow">in</span> <span class="n">fc_range</span><span class="p">:</span>
+        <span class="c1"># sys.stderr.write(&quot;EO:&quot; +  str(gene_count) + &quot;\n&quot;)</span>
+        <span class="n">nof_genes_dict</span><span class="p">,</span> <span class="n">sample_response_dict</span><span class="p">,</span> <span class="n">celltype_response_dict</span><span class="p">,</span> <span class="n">cpop_score_df</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">deg_cellpopscore_df</span><span class="p">(</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf</span><span class="p">,</span> <span class="n">fclim</span><span class="o">=</span><span class="n">fc_lim</span><span class="p">,</span> \
+                            <span class="n">gene_count</span><span class="o">=</span><span class="n">gene_count</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="n">logscale</span><span class="p">)</span>
+        <span class="n">mdict</span> <span class="o">=</span> <span class="n">cpop_score_df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="n">outlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">sample</span><span class="p">,</span> <span class="n">cellpopvals</span> <span class="ow">in</span> <span class="n">mdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">celltypelist</span>            <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">nof_genes</span>               <span class="o">=</span> <span class="n">nof_genes_dict</span><span class="p">[</span><span class="n">sample</span><span class="p">]</span>
+            <span class="n">celltype_response_thres</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">celltype_response_dict</span><span class="p">[</span><span class="n">sample</span><span class="p">])</span>
+            <span class="n">sample_response_val</span>   <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sample_response_dict</span><span class="p">[</span><span class="n">sample</span><span class="p">])</span>
+
+
+            <span class="c1"># print sample</span>
+            <span class="c1"># print &quot;CRT : &quot;, celltype_response_thres</span>
+            <span class="c1"># print &quot;SR  : &quot;, sample_response_val</span>
+
+            <span class="c1"># sort by cell types</span>
+            <span class="n">od</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">cellpopvals</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+            <span class="k">for</span> <span class="n">celltype</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">od</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">celltypelist</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;celltype&quot;</span><span class="p">:</span><span class="n">celltype</span><span class="p">,</span><span class="s2">&quot;score&quot;</span><span class="p">:</span><span class="n">val</span><span class="p">})</span>
+            <span class="n">outlist</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                            <span class="s2">&quot;values&quot;</span><span class="p">:</span><span class="n">celltypelist</span><span class="p">,</span> 
+                            <span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="n">sample</span><span class="p">,</span>
+                            <span class="s2">&quot;nof_genes&quot;</span><span class="p">:</span> <span class="n">nof_genes</span><span class="p">,</span> 
+                            <span class="s2">&quot;celltype_response_thres&quot;</span><span class="p">:</span><span class="n">celltype_response_thres</span><span class="p">,</span>
+                            <span class="s2">&quot;sample_response_score&quot;</span><span class="p">:</span><span class="n">sample_response_val</span>
+                            <span class="p">})</span>
+        
+        
+        <span class="n">final</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;threshold&quot;</span><span class="p">:</span><span class="n">fc_lim</span><span class="p">,</span><span class="s2">&quot;histograms&quot;</span><span class="p">:</span><span class="n">outlist</span><span class="p">})</span> 
+    
+
+    <span class="k">if</span> <span class="n">outfilename</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">outfilename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">jsonout</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">final</span><span class="p">,</span> <span class="n">jsonout</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../icepop.html#icepop.enumerate_output.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Used for testing this file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">deg_infile</span>    <span class="o">=</span> <span class="s2">&quot;../../testing/degs_based_analysis/dataset/Yoshioka_foldchange.tsv&quot;</span>
+    <span class="c1"># deg_infile    = &quot;../testing/degs_based_analysis/input_type1_degs.tsv&quot;</span>
+    <span class="n">cellpop_df</span>    <span class="o">=</span> <span class="n">scp</span><span class="o">.</span><span class="n">get_prop</span><span class="p">(</span><span class="n">species</span><span class="o">=</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;pandas_df&quot;</span><span class="p">)</span>
+    <span class="n">indf</span>          <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">deg_infile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;DEG&quot;</span><span class="p">)</span> 
+    <span class="n">foldchange_range</span> <span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mf">2.5</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mf">3.5</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mf">4.5</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">out_json</span> <span class="o">=</span> <span class="s2">&quot;../../testing/degs_based_analysis/output_type1_degs.json&quot;</span>
+    <span class="c1"># out_json = &quot;../../testing/degs_based_analysis/output_type1_degs.gc.json&quot;</span>
+    <span class="n">enumerate_output</span><span class="p">(</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">indf</span><span class="p">,</span> <span class="n">fc_range</span> <span class="o">=</span> <span class="n">foldchange_range</span><span class="p">,</span> \
+            <span class="n">outfilename</span> <span class="o">=</span> <span class="n">out_json</span><span class="p">,</span>  <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+    <span class="c1"># enumerate_geneclust_go_output(cellpop_df, indf, gene_count=False, \</span>
+    <span class="c1">#         outfilename=out_json, k=40, logscale=None,\</span>
+    <span class="c1">#         fc_range=foldchange_range,\</span>
+    <span class="c1">#         method=&quot;ward&quot;, dist=&quot;euclidean&quot;,\</span>
+    <span class="c1">#         species=&quot;mouse&quot;,pvalim=1,cormeth=None,immune=True,verbose=True)</span>
+
+    
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

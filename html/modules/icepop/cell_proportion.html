@@ -1,0 +1,358 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.cell_proportion &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.cell_proportion</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. _cell_proportion-label:</span>
+
+<span class="sd">These are classes to process various cell population data.</span>
+<span class="sd">The cell population data include:</span>
+<span class="sd">   </span>
+<span class="sd">* `ImmGen &lt;http://www.immgen.org/&gt;`_ for mouse.</span>
+<span class="sd">* `IRIS &lt;http://share.gene.com/share/clark.iris.2004/iris/iris.html&gt;`_  for human.</span>
+
+<span class="sd">The above files are downloaded as public database.</span>
+<span class="sd">It&#39;s stored in ``proportion_data/`` directory</span>
+<span class="sd">See doctsring below for detailed explanation.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015&quot;</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="c1"># pd.set_option(&#39;expand_frame_repr&#39;,False)</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+
+<div class="viewcode-block" id="Iris"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.Iris">[docs]</a><span class="k">class</span> <span class="nc">Iris</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    These are classes to process IRIS data.</span>
+<span class="sd">    The default input is ``ImmgenCons_all_celltypes_MicroarrayExp.csv``</span>
+<span class="sd">    For each gene compute the weight of *K* cell types. </span>
+<span class="sd">    Weight (in percentage) are the proportion of average gene </span>
+<span class="sd">    expression of a given cell type over all cell types.</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import cell_proportion as cellprop</span>
+<span class="sd">    &gt;&gt;&gt; iris = cellprop.ImmGen(irisfile)</span>
+<span class="sd">    &gt;&gt;&gt; iris_weight_dict, iris_ctlist = iris.ComputePercentageWeight()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">irisfn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">irisfn</span> <span class="o">=</span> <span class="n">irisfn</span>
+
+<div class="viewcode-block" id="Iris.ComputeAverage"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.Iris.ComputeAverage">[docs]</a>    <span class="k">def</span> <span class="nf">ComputeAverage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute average for subset of each cell type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parsers</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">irisfn</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">,</span>\
+                <span class="n">skiprows</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">colnames</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">ncolnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span>  <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">colnames</span> <span class="k">if</span> <span class="s2">&quot;DUMMY&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">ncolnames</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Averaging here</span>
+        <span class="n">df_average</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">&quot;Probes&quot;</span><span class="p">,</span><span class="s2">&quot;Genes&quot;</span><span class="p">])</span>
+        <span class="n">df_average</span> <span class="o">=</span> <span class="n">df_average</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">df_average</span></div>
+        
+
+<div class="viewcode-block" id="Iris.ComputePercentageWeight"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.Iris.ComputePercentageWeight">[docs]</a>    <span class="k">def</span> <span class="nf">ComputePercentageWeight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Same with ImmGen version but here we do it</span>
+<span class="sd">        using Pandas. Hence the output here is a data frame</span>
+<span class="sd">        instead of nested dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#-------------------------------------------</span>
+        <span class="c1">#  Compute weight</span>
+        <span class="c1">#------------------------------------------- </span>
+        <span class="n">df_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ComputeAverage</span><span class="p">()</span>
+        <span class="n">celltype_list</span>  <span class="o">=</span> <span class="n">df_weight</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="c1"># Sum values across cell type </span>
+        <span class="n">df_weight</span><span class="p">[</span><span class="s2">&quot;sum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_weight</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Divide each value for every column with sum</span>
+        <span class="n">df_weight</span> <span class="o">=</span> <span class="n">df_weight</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">celltype_list</span><span class="p">]</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">df_weight</span><span class="p">[</span><span class="s2">&quot;sum&quot;</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Multiply every row with 100 as percentage</span>
+        <span class="n">df_weight</span> <span class="o">=</span> <span class="n">df_weight</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> 
+
+        <span class="c1"># Check if total sum is equal to 1</span>
+        <span class="c1"># df_weight[&quot;sum&quot;] = df_weight.sum(axis=1)</span>
+
+        <span class="n">df_weight</span> <span class="o">=</span> <span class="n">df_weight</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">df_weight</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;Probes&#39;</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df_weight</span><span class="p">,</span> <span class="n">celltype_list</span></div></div>
+        
+        
+
+<div class="viewcode-block" id="ImmGen"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.ImmGen">[docs]</a><span class="k">class</span> <span class="nc">ImmGen</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    These are classes to process ImmGen data.</span>
+<span class="sd">    The default input is ``ImmgenCons_all_celltypes_MicroarrayExp.csv``.</span>
+<span class="sd">    For each gene compute the weight of 10 cell types. </span>
+<span class="sd">    Weight (in percentage) are the proportion of average gene </span>
+<span class="sd">    expression of a given cell type over all cell types.</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import cell_proportion as cellprop</span>
+<span class="sd">    &gt;&gt;&gt; ig = cellprop.ImmGen(igfile)</span>
+<span class="sd">    &gt;&gt;&gt; ig_weight_dict, ig_ctlist = ig.ComputePercentageWeight()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">immg_fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Define parent constructor for ImmGen&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immg_fn</span> <span class="o">=</span> <span class="n">immg_fn</span>
+    
+<div class="viewcode-block" id="ImmGen.GetGeneCelltypeDoList"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.ImmGen.GetGeneCelltypeDoList">[docs]</a>    <span class="k">def</span> <span class="nf">GetGeneCelltypeDoList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse ImmGen data and then collect them as</span>
+<span class="sd">        dictionary of list. Each dictionary of list is constructed</span>
+<span class="sd">        with gene names and cell types as keys and </span>
+<span class="sd">        list of gene expressions as values. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">celltypes</span><span class="o">=</span><span class="p">[];</span>
+        <span class="n">outerdict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">))</span>
+            
+        <span class="c1"># Parse ImmGen data</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">immg_fn</span><span class="p">,</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+            <span class="n">csvreader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">csvfile</span><span class="p">,</span><span class="n">skipinitialspace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">celltypes</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">csvreader</span><span class="p">,[])[</span><span class="mi">3</span><span class="p">:]</span>
+            <span class="c1"># next two rows can be skipped</span>
+            <span class="nb">next</span><span class="p">(</span><span class="n">islice</span><span class="p">(</span><span class="n">csvfile</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">csvreader</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">celltype</span><span class="p">,</span><span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">celltypes</span><span class="p">,</span><span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">:]):</span>
+                    <span class="c1"># Collect them into DoL</span>
+                    <span class="n">outerdict</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">celltype</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">celltypes</span><span class="p">,</span><span class="n">outerdict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImmGen.ComputeAverageByOrgans"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.ImmGen.ComputeAverageByOrgans">[docs]</a>    <span class="k">def</span> <span class="nf">ComputeAverageByOrgans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weighted</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Group by organs. Then average for for every cell type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">infile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">immg_fn</span> 
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parsers</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">infile</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span><span class="n">skiprows</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;unicode&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">ix</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">ix</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cell&#39;</span><span class="p">,</span> <span class="s1">&#39;organ&#39;</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="s1">&#39;organ&#39;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stack</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">swaplevel</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">weighted</span><span class="p">:</span>
+            <span class="c1"># Weighted them for 0 to 1 scale. </span>
+            <span class="n">sum_org</span> <span class="o">=</span>  <span class="n">result</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">sum_org</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span>
+            <span class="c1"># print result.loc[:,&#39;thymus&#39;].head()</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span></div>
+        
+
+
+<div class="viewcode-block" id="ImmGen.ComputeAverage"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.ImmGen.ComputeAverage">[docs]</a>    <span class="k">def</span> <span class="nf">ComputeAverage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Note that, a given cell type may contain </span>
+<span class="sd">        many subtypes (e.g. StemCells contains:</span>
+<span class="sd">        SC_LT34F_BM, SC_LTSL_BM, SC_STSL_BM, SC_LTSL_FL,... etc).</span>
+<span class="sd">        Here we compute the average of gene expression</span>
+<span class="sd">        in the given cell type from its subtypes.</span>
+
+<span class="sd">        Let :math:`K` be the list of subtypes :math:`k` in celltype :math:`j`.</span>
+<span class="sd">        And :math:`e_{ik}` is the expression of gene :math:`i` in </span>
+<span class="sd">        subtype :math:`k`. The average expression :math:`\\bar{e}_{ij}` is computed as</span>
+<span class="sd">        follows: </span>
+
+<span class="sd">            .. math::</span>
+<span class="sd">                </span>
+<span class="sd">                \\bar{e}_{ij} = \\frac{\\sum_{k=1}^{K} {e_{ik}}}{|K|}</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">outerdict2</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="n">ctlist</span><span class="p">,</span> <span class="n">outdict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">GetGeneCelltypeDoList</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">gene</span><span class="p">,</span><span class="n">ctvals</span> <span class="ow">in</span> <span class="n">outdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">ct</span><span class="p">,</span><span class="n">vals</span> <span class="ow">in</span> <span class="n">ctvals</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">avg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%.2f</span><span class="s2">&quot;</span>  <span class="o">%</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">))</span>
+                <span class="n">outerdict2</span><span class="p">[</span><span class="n">gene</span><span class="p">][</span><span class="n">ct</span><span class="p">]</span> <span class="o">=</span> <span class="n">avg</span>
+
+
+        <span class="k">return</span><span class="p">(</span><span class="n">outerdict2</span><span class="p">,</span> <span class="n">ctlist</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ImmGen.ComputePercentageWeight"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.ImmGen.ComputePercentageWeight">[docs]</a>    <span class="k">def</span> <span class="nf">ComputePercentageWeight</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        After we obtain the average of cell types&#39; gene expression,</span>
+<span class="sd">        here given a gene, we compute the weight of each gene </span>
+<span class="sd">        in their respective cell type. Let :math:`e_{ij}` be the expression</span>
+<span class="sd">        of gene :math:`i` in cell type :math:`j`.</span>
+<span class="sd">        The cell type weight for every gene is computed as follows:</span>
+
+<span class="sd">            .. math::</span>
+
+<span class="sd">                w_{ij} = \\frac{\\bar{e}_{ij}}{\\sum_{j=1}^{C} { \\bar{e}_{ij} }}</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Sum up value for each gene for all cell type</span>
+        <span class="n">outdict2</span><span class="p">,</span> <span class="n">celltypelist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ComputeAverage</span><span class="p">()</span>
+        <span class="n">uctlist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="nb">set</span><span class="p">(</span><span class="n">celltypelist</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">uctlist</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+        <span class="n">sumdict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> 
+                        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">outdict2</span><span class="o">.</span><span class="n">iteritems</span><span class="p">())</span>
+
+        <span class="c1"># Compute percentage</span>
+        <span class="n">outerdict3</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">gene</span><span class="p">,</span><span class="n">ctavg</span> <span class="ow">in</span> <span class="n">outdict2</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">totavg</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sumdict</span><span class="p">[</span><span class="n">gene</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">ct</span><span class="p">,</span><span class="n">avg</span> <span class="ow">in</span> <span class="n">ctavg</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+                <span class="n">perc</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">avg</span><span class="p">)</span> <span class="o">/</span> <span class="n">totavg</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+                <span class="n">outerdict3</span><span class="p">[</span><span class="n">gene</span><span class="p">][</span><span class="n">ct</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">perc</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">outerdict3</span><span class="p">,</span> <span class="n">uctlist</span><span class="p">)</span> </div>
+
+<div class="viewcode-block" id="ImmGen.ComputePercentageWeightBracket"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.ImmGen.ComputePercentageWeightBracket">[docs]</a>    <span class="k">def</span> <span class="nf">ComputePercentageWeightBracket</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Similar with ``ComputePercentageWeight()``</span>
+<span class="sd">        Only output them in the form of dictionary of list.</span>
+<span class="sd">        List contains cell type with bracketted weight,</span>
+<span class="sd">        (e.g. abTcells(26.12)).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Sum up value for each gene for all cell type</span>
+        <span class="n">outdict2</span><span class="p">,</span> <span class="n">celltypelist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ComputeAverage</span><span class="p">()</span>
+        <span class="n">uctlist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="nb">set</span><span class="p">(</span><span class="n">celltypelist</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">uctlist</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+
+        <span class="n">sumdict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> 
+                        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">outdict2</span><span class="o">.</span><span class="n">iteritems</span><span class="p">())</span>
+
+        <span class="c1"># Compute percentage</span>
+        <span class="n">outerdict3</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">gene</span><span class="p">,</span><span class="n">ctavg</span> <span class="ow">in</span> <span class="n">outdict2</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="n">totavg</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sumdict</span><span class="p">[</span><span class="n">gene</span><span class="p">])</span>
+            
+            <span class="n">ctavg_sorted</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">ctavg</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(),</span> 
+                           <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">):</span><span class="nb">float</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ct</span><span class="p">,</span><span class="n">avg</span> <span class="ow">in</span> <span class="n">ctavg_sorted</span><span class="p">:</span>
+                <span class="n">perc</span> <span class="o">=</span> <span class="n">ct</span> <span class="o">+</span> <span class="s2">&quot;(</span><span class="si">%.2f</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">avg</span><span class="p">)</span> <span class="o">/</span> <span class="n">totavg</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+                <span class="n">outerdict3</span><span class="p">[</span><span class="n">gene</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">perc</span><span class="p">)</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">outerdict3</span><span class="p">,</span> <span class="n">uctlist</span><span class="p">)</span> </div></div>
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../icepop.html#icepop.cell_proportion.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">igfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Use for testing this file.</span>
+
+<span class="sd">    :param igfile: text file, cell population proportion.</span>
+
+<span class="sd">    To test this code:: </span>
+
+<span class="sd">        python cell_proportion.py </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ig</span> <span class="o">=</span> <span class="n">ImmGen</span><span class="p">(</span><span class="n">igfile</span><span class="p">)</span>
+    <span class="n">od3</span> <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">ComputePercentageWeight</span><span class="p">()</span></div>
+    <span class="c1"># print json.dumps(od3, indent=4)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">immgen_file</span> <span class="o">=</span> <span class="s1">&#39;proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv&#39;</span>
+    <span class="n">main</span><span class="p">(</span><span class="n">immgen_file</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

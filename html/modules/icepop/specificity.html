@@ -1,0 +1,350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.specificity &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.specificity</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Various function to calculate specificity</span>
+<span class="sd">score of every gene in proportion data (ImmGen/IRIS)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">linalg</span> <span class="k">as</span> <span class="n">LA</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">input_reader</span> <span class="k">as</span> <span class="nn">ir</span>
+
+
+<div class="viewcode-block" id="bind_sparseness_score"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.bind_sparseness_score">[docs]</a><span class="k">def</span> <span class="nf">bind_sparseness_score</span><span class="p">(</span><span class="n">indf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a Pandas data frame with genes</span>
+<span class="sd">    as row and column of cell types or samples</span>
+<span class="sd">    append sparseness score at the end</span>
+<span class="sd">    </span>
+<span class="sd">    :indf: Pandas data frame.</span>
+<span class="sd">    :returns: Pandas data frame with appended sparseness score.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">nindf</span> <span class="o">=</span> <span class="n">indf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">genelist</span>   <span class="o">=</span> <span class="n">nindf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">val_df</span>  <span class="o">=</span> <span class="n">nindf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span>
+    
+    <span class="n">sparse_list</span> <span class="o">=</span> <span class="n">sparseness</span><span class="p">(</span><span class="n">val_df</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="n">nindf</span><span class="p">[</span><span class="s2">&quot;sparseness_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse_list</span>
+
+    <span class="k">return</span> <span class="n">nindf</span></div>
+
+
+
+
+<div class="viewcode-block" id="jsd_vectorized"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.jsd_vectorized">[docs]</a><span class="k">def</span> <span class="nf">jsd_vectorized</span><span class="p">(</span><span class="n">xs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Using Jensen-Shannon distance calculate </span>
+<span class="sd">    the specificity score of every gene with respect to the  cell type.</span>
+
+<span class="sd">    :param xs: Numpy matrix, which contain list of expression from all cell types.</span>
+<span class="sd">    :returns: Numpy array (1D),  value with sparsity scores for every genes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">xs</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+    <span class="n">nof_celltype</span> <span class="o">=</span> <span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">nof_celltype</span><span class="p">)</span>
+    
+    <span class="c1"># Perform &quot;(x+y)&quot; in a vectorized manner</span>
+    <span class="n">xsI</span> <span class="o">=</span> <span class="n">xs</span><span class="o">+</span><span class="n">I</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span>
+
+    <span class="c1"># Calculate d1 and d2 using xsI again in vectorized manner</span>
+    <span class="n">d1</span> <span class="o">=</span> <span class="n">xs</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">xs</span><span class="o">/</span><span class="n">xsI</span><span class="p">)</span>
+    <span class="n">d2</span> <span class="o">=</span> <span class="n">I</span><span class="p">[:,</span><span class="kc">None</span><span class="p">,:]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="n">I</span><span class="p">[:,</span><span class="kc">None</span><span class="p">,:])</span><span class="o">/</span><span class="n">xsI</span><span class="p">)</span>
+
+    <span class="c1"># Use np.nansum to ignore NaNs &amp; sum along rows to</span>
+    <span class="c1"># get all distances</span>
+    <span class="n">dists</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">d1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">d2</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># Pack the argmax IDs and the</span>
+    <span class="c1"># corresponding scores as final output   </span>
+    <span class="n">ID</span> <span class="o">=</span> <span class="n">dists</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># First column is JS distance,</span>
+    <span class="c1"># Second column is cell type index</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="mf">0.5</span><span class="o">*</span><span class="n">dists</span><span class="p">[</span><span class="n">ID</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dists</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])],</span><span class="n">ID</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">return</span> <span class="n">out</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="normalize"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.normalize">[docs]</a><span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">dfv</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span> 
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Normalize every row.</span>
+
+<span class="sd">    :param dfv: Numpy matrix.</span>
+<span class="sd">    :returns: Numpy matrix, with normalize score.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dfvlog2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">dfv</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">final</span> <span class="o">=</span> <span class="n">dfvlog2</span> <span class="o">/</span> <span class="n">dfvlog2</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span><span class="kc">None</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">final</span></div>
+    
+
+<div class="viewcode-block" id="sparseness"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.sparseness">[docs]</a><span class="k">def</span> <span class="nf">sparseness</span><span class="p">(</span><span class="n">xs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A function to calculate sparseness score</span>
+<span class="sd">    of a given gene.</span>
+<span class="sd">    The value range from 0 to 1. Score 1 means</span>
+<span class="sd">    that the gene is perfectly expressed in one</span>
+<span class="sd">    cell type. Calcuated the following way (Hoyer 2004):</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            </span>
+<span class="sd">            sparseness(x) = \\frac{\sqrt{n}-\\frac{\\sum{||x_{i}||}}{\\sqrt{\\sum{x_{i}^2}}}}{\\sqrt{n}-1}</span>
+
+<span class="sd">    Here :math:`n` refers to the number of cell types and :math:`x_i`</span>
+<span class="sd">    expression of a gene in cell type :math:`i`.</span>
+
+<span class="sd">    :param xs: Numpy matrix, which contain list of expression from all cell types.</span>
+<span class="sd">    :returns: Numpy array (1D),  value with sparsity scores for every genes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+   
+    <span class="n">nr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">xs</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">a</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">xs</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">b</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">xs</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">sparseness</span> <span class="o">=</span> <span class="p">(</span><span class="n">nr</span> <span class="o">-</span> <span class="n">a</span><span class="o">/</span><span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">nr</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sparseness</span></div>
+
+<div class="viewcode-block" id="assign_specificity_score"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.assign_specificity_score">[docs]</a><span class="k">def</span> <span class="nf">assign_specificity_score</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;sparseness&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assign specificity score to the ImmGen/IRIS data. </span>
+<span class="sd">    :param df: Pandas data frame, generally proportion file.</span>
+<span class="sd">    :param method: str(&quot;sparseness&quot;,&quot;js&quot;)</span>
+
+<span class="sd">    :returns: a Panda data frame with where every genes will have its specificity score.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">genelist</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">express_df</span>   <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="c1"># This is faster implementation than using &#39;apply&#39;</span>
+    <span class="c1"># The function is implemented on 2-D numpy array.</span>
+    <span class="n">marker_genes_df</span>  <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">method</span><span class="o">==</span><span class="s2">&quot;sparseness&quot;</span><span class="p">:</span>
+        <span class="c1"># more suited for detecting marker genes</span>
+        <span class="n">marker_genes_df</span>  <span class="o">=</span> <span class="n">sparseness</span><span class="p">(</span><span class="n">express_df</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">marker_genes_df</span>  <span class="o">=</span> <span class="n">jsd_vectorized</span><span class="p">(</span><span class="n">express_df</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">mg_df</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="n">marker_genes_df</span>
+    <span class="k">return</span> <span class="n">mg_df</span></div>
+    
+
+<div class="viewcode-block" id="find_topk_marker_genes"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.find_topk_marker_genes">[docs]</a><span class="k">def</span> <span class="nf">find_topk_marker_genes</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;sparseness&#39;</span><span class="p">,</span><span class="n">to_exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">lim</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span><span class="n">top_k</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find marker genes from expression cell population by</span>
+<span class="sd">    some specificity score. Then select to 10 genes, </span>
+<span class="sd">    one gene which is most specific in one cell type. </span>
+<span class="sd">    </span>
+
+<span class="sd">    :param df: Pandas data frame, generally proportion file.</span>
+<span class="sd">    :param to_exclude: list of cell type to exclude. If None,</span>
+<span class="sd">                       average between abTcell and gdTcell will be performed.</span>
+<span class="sd">    :param method: str(&quot;sparseness&quot;,&quot;js&quot;)</span>
+
+<span class="sd">    :returns: a Panda data frame with selected marker genes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">outerdict</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">read_specificity_pickle</span><span class="p">()</span>
+     
+     
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="c1"># get top_k genes for every cell types</span>
+    <span class="n">all_sel_genes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ct</span><span class="p">,</span><span class="n">topgenes</span> <span class="ow">in</span> <span class="n">outerdict</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="n">sel_genes</span> <span class="o">=</span> <span class="n">topgenes</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">top_k</span><span class="p">]</span> 
+        <span class="n">sel_genes</span> <span class="o">=</span> <span class="p">[</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">sel_genes</span><span class="p">]</span> 
+        <span class="c1"># print ct, &quot;:&quot;,  &quot;,&quot;.join(sel_genes) </span>
+        <span class="n">all_sel_genes</span> <span class="o">+=</span> <span class="n">sel_genes</span>
+        
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">mg_df</span><span class="p">[</span><span class="n">mg_df</span><span class="p">[</span><span class="s1">&#39;Genes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">all_sel_genes</span><span class="p">)]</span>
+    <span class="n">tmp_marker_mat</span> <span class="o">=</span> <span class="n">mg_df</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">condn</span>          <span class="o">=</span> <span class="n">LA</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">tmp_marker_mat</span><span class="p">)</span>
+    <span class="n">mg_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">to_exclude</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># print mg_df</span>
+    <span class="c1"># print &quot;CN:&quot;, condn</span>
+    <span class="k">return</span> <span class="n">mg_df</span></div>
+    
+
+<div class="viewcode-block" id="find_marker_genes"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.find_marker_genes">[docs]</a><span class="k">def</span> <span class="nf">find_marker_genes</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;sparseness&quot;</span><span class="p">,</span> <span class="n">lim</span><span class="o">=</span><span class="mf">0.8</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find marker genes from expression cell population by</span>
+<span class="sd">    some specificity score.</span>
+
+<span class="sd">    :param df: Pandas data frame, generally proportion file.</span>
+<span class="sd">    :param method: str(&quot;sparseness&quot;,&quot;js&quot;)</span>
+<span class="sd">    :param lim:  float, threshold to select </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">assign_specificity_score</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>    
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">mg_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mg_df</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lim</span><span class="p">]</span>
+    <span class="n">mg_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+   
+    <span class="k">return</span> <span class="n">mg_df</span></div>
+
+<div class="viewcode-block" id="condn_thres_mat"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.condn_thres_mat">[docs]</a><span class="k">def</span> <span class="nf">condn_thres_mat</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;sparseness&#39;</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to enumerate condition number from series of thresholds.</span>
+
+<span class="sd">    :param df: Pandas data frame, generally proportion file.</span>
+<span class="sd">    :returns: numpy (3 x 2) matrix, which stores list of threshold, condition \</span>
+<span class="sd">        number and number of markers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">splim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mf">0.1</span><span class="p">)):</span>
+        <span class="n">marker_df_test</span> <span class="o">=</span> <span class="n">find_marker_genes</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">lim</span><span class="o">=</span><span class="n">splim</span><span class="p">)</span>
+        <span class="n">tmp_marker_mat</span> <span class="o">=</span> <span class="n">marker_df_test</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">condn</span>          <span class="o">=</span> <span class="n">LA</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">tmp_marker_mat</span><span class="p">)</span>
+        <span class="n">nof_markers</span>    <span class="o">=</span> <span class="n">tmp_marker_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">conds</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">splim</span>
+        <span class="n">conds</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">condn</span>
+        <span class="n">conds</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">nof_markers</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">condout</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">splim</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">tmp_marker_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">condn</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">condout</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> 
+
+    <span class="k">return</span> <span class="n">conds</span>  </div>
+    
+<div class="viewcode-block" id="find_best_marker_genes"><a class="viewcode-back" href="../../icepop.html#icepop.specificity.find_best_marker_genes">[docs]</a><span class="k">def</span> <span class="nf">find_best_marker_genes</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;sparseness&quot;</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    We use `condition number` to choose the best</span>
+<span class="sd">    specificity threshold.</span>
+
+<span class="sd">    :param df: Pandas data frame, generally proportion file.</span>
+<span class="sd">    :param method: str(&quot;sparseness&quot;,&quot;js&quot;)</span>
+<span class="sd">    :param verbose: boolean</span>
+<span class="sd">    :returns: a Panda data frame with selected marker genes.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># print &quot;FBMG&quot;</span>
+    <span class="c1"># print df.head()</span>
+    <span class="n">conds</span> <span class="o">=</span> <span class="n">condn_thres_mat</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+    <span class="c1"># print repr(conds)</span>
+    <span class="c1"># Index where the condition number is minimum </span>
+    <span class="n">minid</span> <span class="o">=</span>  <span class="n">conds</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">min_lim</span><span class="p">,</span> <span class="n">min_connum</span><span class="p">,</span> <span class="n">nof_marker_genes</span> <span class="o">=</span> <span class="n">conds</span><span class="p">[</span><span class="n">minid</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Best threshold    : &quot;</span> <span class="o">+</span>  <span class="nb">str</span><span class="p">(</span><span class="n">min_lim</span><span class="p">)</span> <span class="o">+</span>  <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Condition number  : &quot;</span> <span class="o">+</span>  <span class="nb">str</span><span class="p">(</span><span class="n">min_connum</span><span class="p">)</span> <span class="o">+</span>   <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Marker genes count: &quot;</span> <span class="o">+</span>  <span class="nb">str</span><span class="p">(</span><span class="n">nof_marker_genes</span><span class="p">)</span> <span class="o">+</span>   <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># print min_lim, minconid</span>
+    <span class="k">return</span> <span class="n">find_marker_genes</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">lim</span><span class="o">=</span><span class="n">min_lim</span><span class="p">)</span></div>
+    
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.cluster_cellpop_score &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.cluster_cellpop_score</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Here we take clustered genes (``degdf``), then </span>
+<span class="sd">for each cluster compute cell population score.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="k">import</span> <span class="n">scale</span>
+<span class="kn">import</span> <span class="nn">input_reader</span> <span class="k">as</span> <span class="nn">ir</span>
+<span class="kn">import</span> <span class="nn">cellpop_score</span> <span class="k">as</span> <span class="nn">cp</span>
+<span class="kn">import</span> <span class="nn">species_cell_proportion</span> <span class="k">as</span> <span class="nn">scp</span>
+<span class="kn">import</span> <span class="nn">clustering</span> <span class="k">as</span> <span class="nn">cl</span>
+
+<div class="viewcode-block" id="cluster_cellpop_score"><a class="viewcode-back" href="../../icepop.html#icepop.cluster_cellpop_score.cluster_cellpop_score">[docs]</a><span class="k">def</span> <span class="nf">cluster_cellpop_score</span><span class="p">(</span><span class="n">cellpopdf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">degdf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fclim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>\
+        <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>\
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;ward&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="s2">&quot;euclidean&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param cellpopdf: Cell population data frame.</span>
+<span class="sd">    :param degdf: DEGs data frame.</span>
+
+<span class="sd">    :param fclim: float, foldchange lower limit thresold.</span>
+<span class="sd">    :param logscale: boolean, transform fold change to logscale.</span>
+<span class="sd">                  This does not affect the result substansially.</span>
+<span class="sd">    :param gene_count: boolean, normalization method. </span>
+<span class="sd">                  If *True*, divide by sum of product. The total weight</span>
+<span class="sd">                  will have to result to 1.00.</span>
+<span class="sd">    :param method: string(&#39;complete&#39;,&#39;average&#39;,&#39;ward&#39;)</span>
+<span class="sd">    :param dist: string(&#39;euclidean&#39;,&#39;manhattan&#39;,&#39;pearsond&#39;)</span>
+<span class="sd">    :param k: integer, number of cluster</span>
+
+<span class="sd">    :returns: Pandas data frame that contains cell population scores </span>
+<span class="sd">            for each cluster and clustered genes with ClusterID added.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import cluster_cellpop_score as ccp</span>
+<span class="sd">    &gt;&gt;&gt; fold_change_lim = 1.5</span>
+<span class="sd">    &gt;&gt;&gt; nof_clust       = 15</span>
+<span class="sd">    &gt;&gt;&gt; full_clust_cpopdf, full_clust_degdf =</span>
+<span class="sd">    &gt;&gt;&gt; ccp.cluster_cellpop_score(cellpopdf=cellpop_df,</span>
+<span class="sd">            &gt;&gt;&gt; degdf=indf,fclim=fold_change_lim,</span>
+<span class="sd">            &gt;&gt;&gt; gene_count=False,logscale=False, k=nof_clust, method=&quot;ward&quot;,</span>
+<span class="sd">            &gt;&gt;&gt; dist=&quot;euclidean&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; full_clust_cpopdf.to_csv(&quot;full_clust.tsv&quot;,sep=&quot;\t&quot;,index=False,float_format=&#39;%.3f&#39;)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">allclusters_degs_df</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">allclusters_cellpop_df</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">clustid</span><span class="p">,</span> <span class="n">degdf_clust</span> <span class="ow">in</span> <span class="n">cl</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">degdf</span><span class="o">=</span><span class="n">degdf</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">fclim</span><span class="o">=</span><span class="n">fclim</span><span class="p">,</span>\
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span><span class="n">dist</span><span class="o">=</span><span class="n">dist</span><span class="p">):</span>
+
+        <span class="n">clustid</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">tmp_degdf_clust</span> <span class="o">=</span> <span class="n">degdf_clust</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">tmp_degdf_clust</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s2">&quot;ClusterID&quot;</span><span class="p">,</span><span class="n">clustid</span><span class="p">)</span>
+        <span class="n">allclusters_degs_df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tmp_degdf_clust</span><span class="p">)</span>
+
+        <span class="n">_</span><span class="p">,</span> <span class="n">cpop_score_df</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">deg_cellpopscore_df</span><span class="p">(</span><span class="n">cellpopdf</span><span class="p">,</span> <span class="n">degdf_clust</span><span class="p">,</span> \
+                <span class="n">fclim</span><span class="o">=</span><span class="n">fclim</span><span class="p">,</span> <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># Here we scale across cell type, using Z-score</span>
+        <span class="n">cpop_score_scale_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">scale</span><span class="p">(</span><span class="n">cpop_score_df</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span><span class="n">index</span><span class="o">=</span><span class="n">cpop_score_df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> \
+                <span class="n">columns</span><span class="o">=</span><span class="n">cpop_score_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="c1"># Here we sum the Z-score across samples</span>
+        <span class="n">cpop_score_scale_series</span> <span class="o">=</span> <span class="n">cpop_score_scale_df</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">cpop_score_scale_sumdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">cpop_score_scale_series</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;zscore&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">cpop_score_scale_sumdf</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s2">&quot;Cluster&quot;</span><span class="p">,</span><span class="n">clustid</span><span class="p">)</span>
+        <span class="n">allclusters_cellpop_df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cpop_score_scale_sumdf</span><span class="p">)</span>
+        
+    <span class="n">full_cluster_cellpop_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">allclusters_cellpop_df</span><span class="p">)</span>
+    <span class="n">full_cluster_deg_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">allclusters_degs_df</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">full_cluster_cellpop_df</span><span class="p">,</span> <span class="n">full_cluster_deg_df</span> </div>
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../icepop.html#icepop.cluster_cellpop_score.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Used for testing this file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">deg_infile</span>    <span class="o">=</span> <span class="s2">&quot;../testing/input_type1_degs.tsv&quot;</span>
+    <span class="n">cellpop_df</span>    <span class="o">=</span> <span class="n">scp</span><span class="o">.</span><span class="n">get_prop</span><span class="p">(</span><span class="n">species</span><span class="o">=</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;pandas_df&quot;</span><span class="p">)</span>
+    <span class="n">indf</span>          <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">deg_infile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;DEG&quot;</span><span class="p">)</span> 
+    <span class="n">fold_change_lim</span> <span class="o">=</span> <span class="mf">1.5</span>   
+    <span class="n">nof_clust</span>       <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">full_clust_cpopdf</span><span class="p">,</span> <span class="n">full_clust_degdf</span> <span class="o">=</span> \
+    <span class="n">cluster_cellpop_score</span><span class="p">(</span><span class="n">cellpopdf</span><span class="o">=</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">degdf</span><span class="o">=</span><span class="n">indf</span><span class="p">,</span>\
+            <span class="n">fclim</span><span class="o">=</span><span class="n">fold_change_lim</span><span class="p">,</span>\
+        <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">nof_clust</span><span class="p">,</span>\
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;ward&quot;</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="s2">&quot;euclidean&quot;</span><span class="p">)</span>
+   
+    <span class="nb">print</span> <span class="n">full_clust_cpopdf</span>
+    <span class="nb">print</span> <span class="n">full_clust_degdf</span></div>
+     
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

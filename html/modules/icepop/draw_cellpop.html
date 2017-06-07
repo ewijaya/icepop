@@ -1,0 +1,384 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.draw_cellpop &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.draw_cellpop</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Given a data frame that looks like this:</span>
+
+<span class="sd">                    FoldChange_Sample2  FoldChange_Sample3</span>
+<span class="sd">    Bcells                    0.041977            0.059211</span>
+<span class="sd">    DendriticCells            0.071067            0.076072</span>
+<span class="sd">    ...</span>
+<span class="sd">    StemCells                 0.048593            0.065881</span>
+<span class="sd">    StromalCells              0.108675            0.189875</span>
+<span class="sd">    abTcells                  0.059072            0.067225</span>
+<span class="sd">    gdTCells                  0.062106            0.066489</span>
+
+
+<span class="sd">We perform  various plotting.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015.&quot;</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;ggplot&#39;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">)</span>
+
+<span class="n">brewer_Dark2_ten</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;#1B9E77&quot;</span><span class="p">,</span> <span class="s2">&quot;#AE6D1C&quot;</span><span class="p">,</span> <span class="s2">&quot;#A16864&quot;</span><span class="p">,</span> <span class="s2">&quot;#9B58A5&quot;</span><span class="p">,</span> <span class="s2">&quot;#D8367D&quot;</span><span class="p">,</span> 
+                    <span class="s2">&quot;#749829&quot;</span><span class="p">,</span> <span class="s2">&quot;#BBA90B&quot;</span><span class="p">,</span> <span class="s2">&quot;#C9930D&quot;</span><span class="p">,</span> <span class="s2">&quot;#97722D&quot;</span><span class="p">,</span> <span class="s2">&quot;#666666&quot;</span><span class="p">]</span>
+
+<span class="n">brewer_Accent_ten</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;#7FC97F&quot;</span><span class="p">,</span> <span class="s2">&quot;#B0B4C1&quot;</span><span class="p">,</span> <span class="s2">&quot;#E1B8A8&quot;</span><span class="p">,</span> <span class="s2">&quot;#FDD58C&quot;</span><span class="p">,</span> <span class="s2">&quot;#E8EE9B&quot;</span><span class="p">,</span>
+                     <span class="s2">&quot;#4E7CAD&quot;</span><span class="p">,</span> <span class="s2">&quot;#B2258F&quot;</span><span class="p">,</span> <span class="s2">&quot;#DA2950&quot;</span><span class="p">,</span> <span class="s2">&quot;#AB5D28&quot;</span><span class="p">,</span> <span class="s2">&quot;#666666&quot;</span><span class="p">]</span>
+
+<span class="n">brewer_Paired_ten</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;#A6CEE3&quot;</span><span class="p">,</span> <span class="s2">&quot;#3F8EAA&quot;</span><span class="p">,</span> <span class="s2">&quot;#79C360&quot;</span><span class="p">,</span> <span class="s2">&quot;#B89B74&quot;</span><span class="p">,</span> <span class="s2">&quot;#E52829&quot;</span><span class="p">,</span> 
+                     <span class="s2">&quot;#FDB762&quot;</span><span class="p">,</span> <span class="s2">&quot;#ED8F47&quot;</span><span class="p">,</span> <span class="s2">&quot;#9471B4&quot;</span><span class="p">,</span> <span class="s2">&quot;#DDD399&quot;</span><span class="p">,</span> <span class="s2">&quot;#B15928&quot;</span><span class="p">]</span>
+
+<span class="n">tableau20</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">31</span><span class="p">,</span> <span class="mi">119</span><span class="p">,</span> <span class="mi">180</span><span class="p">),</span> <span class="p">(</span><span class="mi">174</span><span class="p">,</span> <span class="mi">199</span><span class="p">,</span> <span class="mi">232</span><span class="p">),</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">127</span><span class="p">,</span> <span class="mi">14</span><span class="p">),</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">187</span><span class="p">,</span> <span class="mi">120</span><span class="p">),</span>    
+             <span class="p">(</span><span class="mi">44</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">44</span><span class="p">),</span> <span class="p">(</span><span class="mi">152</span><span class="p">,</span> <span class="mi">223</span><span class="p">,</span> <span class="mi">138</span><span class="p">),</span> <span class="p">(</span><span class="mi">214</span><span class="p">,</span> <span class="mi">39</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">152</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span>    
+             <span class="p">(</span><span class="mi">148</span><span class="p">,</span> <span class="mi">103</span><span class="p">,</span> <span class="mi">189</span><span class="p">),</span> <span class="p">(</span><span class="mi">197</span><span class="p">,</span> <span class="mi">176</span><span class="p">,</span> <span class="mi">213</span><span class="p">),</span> <span class="p">(</span><span class="mi">140</span><span class="p">,</span> <span class="mi">86</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="p">(</span><span class="mi">196</span><span class="p">,</span> <span class="mi">156</span><span class="p">,</span> <span class="mi">148</span><span class="p">),</span>    
+             <span class="p">(</span><span class="mi">227</span><span class="p">,</span> <span class="mi">119</span><span class="p">,</span> <span class="mi">194</span><span class="p">),</span> <span class="p">(</span><span class="mi">247</span><span class="p">,</span> <span class="mi">182</span><span class="p">,</span> <span class="mi">210</span><span class="p">),</span> <span class="p">(</span><span class="mi">127</span><span class="p">,</span> <span class="mi">127</span><span class="p">,</span> <span class="mi">127</span><span class="p">),</span> <span class="p">(</span><span class="mi">199</span><span class="p">,</span> <span class="mi">199</span><span class="p">,</span> <span class="mi">199</span><span class="p">),</span>    
+             <span class="p">(</span><span class="mi">188</span><span class="p">,</span> <span class="mi">189</span><span class="p">,</span> <span class="mi">34</span><span class="p">),</span> <span class="p">(</span><span class="mi">219</span><span class="p">,</span> <span class="mi">219</span><span class="p">,</span> <span class="mi">141</span><span class="p">),</span> <span class="p">(</span><span class="mi">23</span><span class="p">,</span> <span class="mi">190</span><span class="p">,</span> <span class="mi">207</span><span class="p">),</span> <span class="p">(</span><span class="mi">158</span><span class="p">,</span> <span class="mi">218</span><span class="p">,</span> <span class="mi">229</span><span class="p">)]</span>   
+
+<span class="n">tableau10</span><span class="o">=</span><span class="p">[</span> <span class="s2">&quot;#17BECF&quot;</span><span class="p">,</span> <span class="s2">&quot;#BCBD22&quot;</span><span class="p">,</span> <span class="s2">&quot;#7F7F7F&quot;</span><span class="p">,</span> <span class="s2">&quot;#CFECF9&quot;</span><span class="p">,</span> <span class="s2">&quot;#8C564B&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#9467BD&quot;</span><span class="p">,</span> <span class="s2">&quot;#D62728&quot;</span><span class="p">,</span> <span class="s2">&quot;#2CA02C&quot;</span><span class="p">,</span> <span class="s2">&quot;#FF7F0E&quot;</span><span class="p">,</span> <span class="s2">&quot;#1F77B4&quot;</span> <span class="p">]</span>
+
+
+<span class="c1"># Scale the RGB values to the [0, 1] range, which is the format matplotlib</span>
+<span class="c1"># accepts.    </span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tableau20</span><span class="p">)):</span>    
+    <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">tableau20</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>    
+    <span class="n">tableau20</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span> <span class="o">/</span> <span class="mf">255.</span><span class="p">,</span> <span class="n">g</span> <span class="o">/</span> <span class="mf">255.</span><span class="p">,</span> <span class="n">b</span> <span class="o">/</span> <span class="mf">255.</span><span class="p">)</span>   
+
+
+<div class="viewcode-block" id="bar_plot"><a class="viewcode-back" href="../../icepop.html#icepop.draw_cellpop.bar_plot">[docs]</a><span class="k">def</span> <span class="nf">bar_plot</span><span class="p">(</span><span class="n">indf</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ymin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ymax</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">y_thres</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make barplot. All in one figure. Not very pretty.</span>
+<span class="sd">    Based on `Pandas method</span>
+<span class="sd">    &lt;http://pandas.pydata.org/pandas-docs/version/0.15.0/visualization.html#histograms&gt;`_.</span>
+<span class="sd">    </span>
+<span class="sd">    :param indf:    cell population data frame.</span>
+<span class="sd">    :param title:   string.</span>
+<span class="sd">    :param outfile: string (e.g. &#39;plot.png&#39;).</span>
+
+<span class="sd">    :returns: Histogram plot.</span>
+<span class="sd">        Image file type is defined automatically from output file extension.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="n">toplot_df</span> <span class="o">=</span> <span class="n">indf</span>
+    <span class="n">xlabels</span> <span class="o">=</span>  <span class="n">toplot_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">barplot</span>   <span class="o">=</span> <span class="n">toplot_df</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">17</span><span class="p">,</span><span class="mi">17</span><span class="p">),</span> \
+                          <span class="n">color</span> <span class="o">=</span> <span class="n">tableau10</span><span class="p">,</span> \
+                          <span class="n">width</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>\
+                          <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>\
+                          <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">ylim</span> <span class="o">=</span> <span class="p">(</span><span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="p">),</span>
+                          <span class="n">subplots</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">xlabels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">y_thres</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y_thres</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span><span class="n">zorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Score&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">barplot</span><span class="o">.</span><span class="n">get_figure</span><span class="p">()</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span><span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span></div>
+
+<div class="viewcode-block" id="condn_plot"><a class="viewcode-back" href="../../icepop.html#icepop.draw_cellpop.condn_plot">[docs]</a><span class="k">def</span> <span class="nf">condn_plot</span><span class="p">(</span><span class="n">condn_mat</span><span class="p">,</span><span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A function to plot condition number</span>
+<span class="sd">    with respect to series of specificity threshold.</span>
+
+<span class="sd">    :param condn_mat: a numpy matrix generated by :func:`condn_thres_mat() &lt;specificity.condn_thres_mat&gt;`.</span>
+<span class="sd">    :returns: line plot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+   
+    <span class="n">sns</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s2">&quot;darkgrid&quot;</span><span class="p">)</span>
+    <span class="n">spec_lim</span> <span class="o">=</span> <span class="n">condn_mat</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">condn_vec</span> <span class="o">=</span> <span class="n">condn_mat</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">minid</span> <span class="o">=</span> <span class="n">condn_mat</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">min_lim</span><span class="p">,</span> <span class="n">min_connum</span><span class="p">,</span> <span class="n">nof_marker_genes</span> <span class="o">=</span> <span class="n">condn_mat</span><span class="p">[</span><span class="n">minid</span><span class="p">]</span>
+
+
+    <span class="c1"># Actual plotting</span>
+    <span class="c1"># Color from Tableau 20 scheme</span>
+    <span class="n">maincol</span> <span class="o">=</span> <span class="s2">&quot;#D12B31&quot;</span>
+    <span class="n">axcol</span>   <span class="o">=</span> <span class="s2">&quot;#42B1AF&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spec_lim</span><span class="p">,</span> <span class="n">condn_vec</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">maincol</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Threshold&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Condition Number&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">min_connum</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">axcol</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">min_lim</span><span class="p">,</span><span class="n">linewidth</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span><span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="n">axcol</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="n">min_lim</span><span class="p">],[</span><span class="n">min_connum</span><span class="p">],</span><span class="s1">&#39;o&#39;</span><span class="p">)</span>
+    <span class="n">in_text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">nof_marker_genes</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39; marker genes&#39;</span> 
+    <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">min_lim</span> <span class="o">-</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">min_connum</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span> <span class="n">in_text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;string-escape&#39;</span><span class="p">)</span> <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;Best Specificity Threshold&#39;</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Save to file</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> </div>
+
+
+<div class="viewcode-block" id="bar_plot_facet"><a class="viewcode-back" href="../../icepop.html#icepop.draw_cellpop.bar_plot_facet">[docs]</a><span class="k">def</span> <span class="nf">bar_plot_facet</span><span class="p">(</span><span class="n">indf</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make barplot in trellis (facet), using `Seaborn &lt;http://stanford.edu/~mwaskom/software/seaborn/&gt;`_.</span>
+<span class="sd">    Each sample one figure.</span>
+
+<span class="sd">    :param indf:    cell population data frame.</span>
+<span class="sd">    :param title:   string.</span>
+<span class="sd">    :param outfile: string (e.g. &#39;plot.png&#39;).</span>
+
+<span class="sd">    :returns: Histogram plot facet.</span>
+<span class="sd">        Image file type is defined automatically from output file extension.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import draw_cellpop as dc</span>
+<span class="sd">    &gt;&gt;&gt; outfile = &quot;barplot.png&quot;</span>
+<span class="sd">    &gt;&gt;&gt; dc.bar_plot_facet(cpop_score_df, outfile=outfile)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sample_names</span> <span class="o">=</span> <span class="n">indf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">tmp_df</span> <span class="o">=</span> <span class="n">indf</span>
+    <span class="n">tmp_df</span><span class="p">[</span><span class="s2">&quot;Celltype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp_df</span><span class="o">.</span><span class="n">index</span>
+    <span class="n">ndf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">tmp_df</span><span class="p">,</span><span class="n">id_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Celltype&quot;</span><span class="p">],</span> <span class="n">var_name</span><span class="o">=</span><span class="s2">&quot;Samples&quot;</span><span class="p">,</span> \
+                  <span class="n">value_name</span><span class="o">=</span><span class="s2">&quot;Score&quot;</span><span class="p">,</span> <span class="n">value_vars</span><span class="o">=</span><span class="n">sample_names</span> <span class="p">)</span>
+
+    <span class="c1"># Initialize a grid of plots with an Axes for each walk</span>
+    <span class="c1"># Use factorplot</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">factorplot</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s2">&quot;Celltype&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Score&quot;</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="s2">&quot;Samples&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> 
+            <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;Set3&quot;</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">,</span> <span class="n">saturation</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">ndf</span><span class="p">,</span> <span class="n">col_wrap</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">set_titles</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{col_name}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Helvetica&quot;</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">set_ylabels</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">25</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">set_axis_labels</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span><span class="s2">&quot;Score&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span> <span class="c1">#[] we hide the x-ticks label</span>
+        <span class="o">.</span><span class="n">set_yticklabels</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">despine</span><span class="p">(</span><span class="n">bottom</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="c1">#print dir(grid._legend_out)</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">(),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">)</span>
+    <span class="n">grid</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span></div>
+
+<div class="viewcode-block" id="cellpop_cluster_heatmap"><a class="viewcode-back" href="../../icepop.html#icepop.draw_cellpop.cellpop_cluster_heatmap">[docs]</a><span class="k">def</span> <span class="nf">cellpop_cluster_heatmap</span><span class="p">(</span><span class="n">cellpop_clust_df</span><span class="p">,</span> <span class="n">fig_width</span><span class="o">=</span><span class="mf">5.25</span><span class="p">,</span> \
+        <span class="n">fig_height</span><span class="o">=</span><span class="mf">10.25</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make heatmap for cell population clusters, using `Seaborn &lt;http://stanford.edu/~mwaskom/software/seaborn/&gt;`_.</span>
+
+<span class="sd">    :param cellpop_clust_df: cell population cluster data frame.</span>
+<span class="sd">    :param title: string</span>
+<span class="sd">    :param outfile: string (e.g. &#39;plot.png&#39;).</span>
+
+<span class="sd">    :returns: Heatmap, with cluster number as *y*-axis and cell population as *x*-axis.</span>
+<span class="sd">        Image file type is defined automatically from output file extension.</span>
+
+<span class="sd">    Usage:</span>
+
+<span class="sd">    &gt;&gt;&gt; from icepop import draw_cellpop as dc</span>
+<span class="sd">    &gt;&gt;&gt; dc.cellpop_cluster_heatmap(full_clust_cpopdf, outfile=&quot;heatmap.png&quot;)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">cellpop_clust_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;Cluster&quot;</span><span class="p">,</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">nof_row</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="n">fig_height_ratio</span> <span class="o">=</span> <span class="n">nof_row</span> <span class="o">/</span> <span class="mi">50</span> 
+     
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">diverging_palette</span><span class="p">(</span><span class="mi">220</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">as_cmap</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">grid_kws</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;height_ratios&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mf">1.5</span><span class="p">,</span> <span class="o">.</span><span class="mi">05</span><span class="p">),</span> <span class="s2">&quot;hspace&quot;</span><span class="p">:</span> <span class="o">.</span><span class="mi">4</span><span class="p">}</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">cbar_ax</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">gridspec_kw</span><span class="o">=</span><span class="n">grid_kws</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">square</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span>
+                     <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">cbar_ax</span><span class="o">=</span><span class="n">cbar_ax</span><span class="p">,</span>
+                     <span class="n">cbar_kws</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;orientation&quot;</span><span class="p">:</span> <span class="s2">&quot;horizontal&quot;</span><span class="p">}</span>
+            <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">(),</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+    <span class="n">cbar_ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Z-score&#39;</span><span class="p">)</span>
+
+
+    <span class="c1"># Because it gets ugly when row is greater than 50</span>
+    <span class="c1"># Then we need to resize it accordingly</span>
+    <span class="k">if</span> <span class="n">nof_row</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+        <span class="n">fig_height</span> <span class="o">=</span> <span class="n">fig_height</span> <span class="o">*</span> <span class="n">fig_height_ratio</span>
+        
+    <span class="n">fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">(</span><span class="n">fig_width</span><span class="p">,</span><span class="n">fig_height</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outfile</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span></div>
+
+<div class="viewcode-block" id="pieplot_deconv"><a class="viewcode-back" href="../../icepop.html#icepop.draw_cellpop.pieplot_deconv">[docs]</a><span class="k">def</span> <span class="nf">pieplot_deconv</span><span class="p">(</span><span class="n">indf</span><span class="p">,</span><span class="n">nrows</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot pie chart for deconvolution of</span>
+<span class="sd">    gene expression as facet</span>
+
+<span class="sd">    :param indf:    cell population data frame.</span>
+<span class="sd">    :param nrows:   integer</span>
+<span class="sd">    :param ncols:   integer</span>
+<span class="sd">    :param outfile: string (e.g. &#39;plot.png&#39;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="n">ncols</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">12</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+    <span class="n">label_incl_lim</span> <span class="o">=</span> <span class="mf">0.3</span>
+    <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">indf</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">indf</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">if</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">*</span> <span class="n">label_incl_lim</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span>
+                <span class="nb">zip</span><span class="p">(</span><span class="n">indf</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="n">data</span><span class="p">)]</span>
+        
+        <span class="n">ax</span><span class="o">.</span><span class="n">pie</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">autopct</span><span class="o">=</span><span class="n">choose_autopct</span><span class="p">(</span><span class="n">label_incl_lim</span><span class="o">*</span><span class="mi">100</span><span class="p">),</span>  <span class="n">colors</span><span class="o">=</span><span class="n">tableau20</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">ylabel</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>  <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;equal&#39;</span> <span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">col</span><span class="p">,</span><span class="n">fontweight</span><span class="o">=</span><span class="s1">&#39;bold&#39;</span><span class="p">)</span>
+
+    <span class="n">colnames</span> <span class="o">=</span> <span class="n">indf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">nof_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">colnames</span><span class="p">)</span>
+
+    <span class="n">legend_row_id</span> <span class="o">=</span> <span class="p">(</span><span class="n">nrows</span> <span class="o">*</span> <span class="n">ncols</span><span class="p">)</span> <span class="o">%</span> <span class="n">nof_samples</span>
+
+    <span class="n">legend_col_id</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">nof_samples</span> <span class="o">&lt;</span> <span class="n">ncols</span><span class="p">:</span>
+        <span class="n">legend_col_id</span> <span class="o">=</span> <span class="n">nof_samples</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Not perfect need to be tested</span>
+        <span class="n">legend_col_id</span> <span class="o">=</span> <span class="n">ncols</span> <span class="o">-</span> <span class="p">((</span><span class="n">nrows</span> <span class="o">*</span> <span class="n">ncols</span><span class="p">)</span> <span class="o">%</span> <span class="n">nof_samples</span> <span class="p">)</span> <span class="o">-</span><span class="mi">1</span> 
+
+
+
+    <span class="c1"># for 10 samples</span>
+    <span class="c1"># axes[2, 1].legend(indf.index, bbox_to_anchor=(3.0,1.5),fontsize=15)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">legend_row_id</span><span class="p">,</span> <span class="n">legend_col_id</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">indf</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">2.5</span><span class="p">,</span><span class="mf">1.5</span><span class="p">),</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span><span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> </div>
+
+
+<div class="viewcode-block" id="choose_autopct"><a class="viewcode-back" href="../../icepop.html#icepop.draw_cellpop.choose_autopct">[docs]</a><span class="k">def</span> <span class="nf">choose_autopct</span><span class="p">(</span><span class="n">limit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to select autopct based on threshold. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">inner_autopct</span><span class="p">(</span><span class="n">pct</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">pct</span><span class="p">)</span> <span class="k">if</span> <span class="n">pct</span> <span class="o">&gt;</span> <span class="n">limit</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">inner_autopct</span></div>
+    
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

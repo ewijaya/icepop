@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.clustering &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.clustering</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">Perform clustering on genes. </span>
+<span class="sd">Later for each cluster we run cell population scoring.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015&quot;</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="k">import</span> <span class="n">AgglomerativeClustering</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">mode</span><span class="o">.</span><span class="n">chained_assignment</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># default=&#39;warn&#39;</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="k">import</span> <span class="n">pearsonr</span>
+<span class="kn">import</span> <span class="nn">scipy.cluster.hierarchy</span> <span class="k">as</span> <span class="nn">hc</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">input_reader</span> <span class="k">as</span> <span class="nn">ir</span>
+
+
+<div class="viewcode-block" id="pearson_distance"><a class="viewcode-back" href="../../icepop.html#icepop.clustering.pearson_distance">[docs]</a><span class="k">def</span> <span class="nf">pearson_distance</span><span class="p">(</span><span class="n">np_matrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate distance matrix based on Pearson correlation.</span>
+
+<span class="sd">    :param np_matrix: a numpy matrix of size (*M* x *N*).</span>
+
+<span class="sd">    :returns: A numpy similarity matrix with size (*M* x *M*).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">np_matrix</span><span class="p">]</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">np_matrix</span><span class="p">])</span></div>
+    
+
+<div class="viewcode-block" id="cluster"><a class="viewcode-back" href="../../icepop.html#icepop.clustering.cluster">[docs]</a><span class="k">def</span> <span class="nf">cluster</span><span class="p">(</span><span class="n">degdf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">fclim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span><span class="n">dist</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Clustering function. Derived from  scikit-learn&#39;s</span>
+<span class="sd">    `AgglomerativeClustering &lt;http://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html#sklearn.cluster.AgglomerativeClustering&gt;`_</span>
+<span class="sd">    method.</span>
+
+
+<span class="sd">    :param degdf: DEGs data frame.</span>
+
+<span class="sd">    :param method: string(&#39;complete&#39;,&#39;average&#39;,&#39;ward&#39;).</span>
+<span class="sd">    :param dist: string(&#39;euclidean&#39;,&#39;manhattan&#39;,&#39;pearsond&#39;).</span>
+<span class="sd">    :param k: integer, number of cluster.</span>
+
+<span class="sd">    :returns: A generator that list gene names for each cluster.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">colnames</span> <span class="o">=</span> <span class="n">degdf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">probe_col</span><span class="p">,</span> <span class="n">gene_col</span> <span class="o">=</span> <span class="n">colnames</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">sample_names</span> <span class="o">=</span> <span class="n">degdf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">sample_names</span> <span class="o">=</span> <span class="n">sample_names</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+    <span class="n">selected_degdf</span> <span class="o">=</span> <span class="n">degdf</span><span class="p">[(</span><span class="n">degdf</span><span class="p">[</span><span class="n">sample_names</span><span class="p">]</span><span class="o">&gt;</span><span class="n">fclim</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="n">selected_degdf_full</span> <span class="o">=</span> <span class="n">selected_degdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c1"># for later recovery</span>
+
+    <span class="c1"># print selected_degdf_full.head()</span>
+    <span class="c1"># print selected_degdf_full.shape</span>
+    <span class="n">ddf_colnames</span> <span class="o">=</span> <span class="n">selected_degdf</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">selected_degdf</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;probe&quot;</span><span class="p">,</span><span class="s2">&quot;gene&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ddf_colnames</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+
+    <span class="n">selected_genes</span> <span class="o">=</span> <span class="n">selected_degdf</span><span class="p">[</span><span class="s2">&quot;gene&quot;</span><span class="p">]</span>
+    <span class="n">selected_degdf</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;gene&#39;</span><span class="p">,</span><span class="s1">&#39;probe&#39;</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="c1"># print selected_degdf.shape[0]</span>
+
+    <span class="c1"># if selected_degdf.shape[0] &lt; k:</span>
+    <span class="c1">#     sys.stderr.write(&quot;Genes is fewer than cluster, skip clustering...\n&quot;)</span>
+
+    <span class="n">selected_degdf_np_mat</span>   <span class="o">=</span> <span class="n">selected_degdf</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+    <span class="n">nof_final_samples</span> <span class="o">=</span> <span class="n">selected_degdf_np_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    
+    <span class="n">affinity</span> <span class="o">=</span> <span class="n">dist</span>
+    <span class="k">if</span> <span class="n">dist</span> <span class="o">==</span> <span class="s2">&quot;pearsond&quot;</span><span class="p">:</span>
+        <span class="n">affinity</span> <span class="o">=</span> <span class="n">pearson_distance</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span><span class="s2">&quot;ward&quot;</span> <span class="ow">and</span> <span class="n">dist</span> <span class="o">!=</span><span class="s2">&quot;euclidean&quot;</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s2">&quot;Clustering failed!!! Ward method can only be used with Euclidean distance.&quot;</span><span class="p">)</span>
+        
+
+    <span class="n">cluster</span> <span class="o">=</span> <span class="n">AgglomerativeClustering</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>\
+                <span class="n">linkage</span><span class="o">=</span><span class="n">method</span><span class="p">,</span><span class="n">affinity</span><span class="o">=</span><span class="n">affinity</span><span class="p">)</span>
+
+
+    <span class="n">label</span> <span class="o">=</span> <span class="n">cluster</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">selected_degdf_np_mat</span><span class="p">)</span><span class="o">.</span><span class="n">labels_</span>
+    <span class="n">outclust</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">selected_genes</span><span class="p">))</span>
+    <span class="n">outclust_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">outclust</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ClusterID&quot;</span><span class="p">,</span><span class="s2">&quot;Genes&quot;</span><span class="p">])</span>
+
+
+    <span class="k">for</span> <span class="n">clust</span> <span class="ow">in</span> <span class="n">outclust_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;ClusterID&quot;</span><span class="p">):</span>
+        <span class="n">clustid</span>  <span class="o">=</span> <span class="n">clust</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">clust_df</span> <span class="o">=</span> <span class="n">clust</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">df_index</span> <span class="o">=</span> <span class="n">clust_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">degdf_clust</span> <span class="o">=</span> <span class="n">selected_degdf_full</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">df_index</span><span class="p">]</span>
+        <span class="c1"># print clustid</span>
+        <span class="c1"># print degdf_clust.shape</span>
+        <span class="c1"># print degdf_clust.head()</span>
+        <span class="c1"># print &quot;----&quot;</span>
+        <span class="k">yield</span> <span class="n">clustid</span><span class="p">,</span> <span class="n">degdf_clust</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../icepop.html#icepop.clustering.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Used for testing this file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">deg_infile</span>    <span class="o">=</span> <span class="s2">&quot;../testing/input_type1_degs.large.tsv&quot;</span>
+    <span class="n">indf</span>          <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">deg_infile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;DEG&quot;</span><span class="p">)</span> 
+    <span class="n">cluster</span><span class="p">(</span><span class="n">degdf</span><span class="o">=</span><span class="n">indf</span><span class="p">,</span> <span class="n">fclim</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;ward&#39;</span><span class="p">,</span><span class="n">dist</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">)</span></div>
+    
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

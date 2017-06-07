@@ -1,0 +1,20 @@
+Development roadmap
+-------------------
+
+This document outline's ICEPOP intended development path.
+
+.. WARNING::
+   This information is subject to change, and should not 
+   be used as life- or career-altering decisions!
+
+ICEPOP 1.x
+==========
+
+In this version we will emphasize the completion of DEGs cell population
+analysis at its entirety. It also includes non-DEGs (raw expression)
+deconvolution method.
+
+ICEPOP 2.x
+==========
+
+Implement gene network analysis for cell population.

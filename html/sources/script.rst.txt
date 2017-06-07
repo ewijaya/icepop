@@ -1,0 +1,73 @@
+Cell population score (DEGs)
+---------------------------------------
+Calculate immune cell population score for differentially
+expressed genes.
+
+.. command-output:: ../../icepop/scripts/icepop_degs -h
+
+The input should be either in form of `CSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.csv>`_, `TSV <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.tsv>`_ or `Excel <http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.xlsx>`_ files.
+The results can be in the form of table or plot. They are determined by the
+suffix of the output file.
+
+To create plot::
+
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.jpg
+
+
+The command will produce individual plots depending on the number of samples.
+To create table::
+
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.tsv
+    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.xlsx
+
+Suffixes of the output should either one of these: 'svg', 'jpg', 'png', 'tsv', 'xlsx', 'xls'.
+
+
+Circos plot for unearthing the gene features in immune cells
+------------------------------------------------------------
+This script produces the circular plot that links feature
+genes among the samples.
+
+
+.. command-output:: ../../icepop/scripts/icepop_degs_circos_uniform -h
+
+
+It assumes that `Circos <http://www.circos.ca/>`_  is already installed
+in your main path. Typical use looks like this in Bash script:
+
+
+.. code-block:: bash 
+    :linenos:
+
+    INFILE=input_type1_degs.tsv
+    CIRCOS_DIR=your_circos_dir
+    CIRCOS_CONF=//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
+
+    icepop_degs_circos_uniform $INFILE \ 
+        --go \
+        -fclim 2 \
+        -cv_organ sp \
+        -circos_dir $CIRCOS_DIR
+
+    cd $CIRCOS_DIR
+    cp -r $CIRCOS_CONF .
+    circos -param random_string='image' -conf ./etc/circos-medium.conf
+
+
+Gene clustering and GO enrichment
+---------------------------------
+
+Given a differentially expressed genes, this script 
+perform gene clustering and calculate gene ontology (GO) enrichment.
+
+.. command-output:: ../../icepop/scripts/go_degs_cluster -h
+
+
+Cell population score for gene clusters
+---------------------------------------
+This script perform gene clustering and calculate
+cell population score for each cluster.
+
+
+.. command-output:: ../../icepop/scripts/icepop_degs_cluster -h
+

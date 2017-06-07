@@ -1,0 +1,1473 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop package &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="shortcut icon" href="static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Development roadmap" href="roadmap.html" />
+    <link rel="prev" title="Cell population score (DEGs)" href="script.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="icepop-package">
+<h1>icepop package<a class="headerlink" href="#icepop-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-icepop.cell_proportion">
+<span id="icepop-cell-proportion-module"></span><h2>icepop.cell_proportion module<a class="headerlink" href="#module-icepop.cell_proportion" title="Permalink to this headline">¶</a></h2>
+<p id="cell-proportion-label">These are classes to process various cell population data.
+The cell population data include:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.immgen.org/">ImmGen</a> for mouse.</li>
+<li><a class="reference external" href="http://share.gene.com/share/clark.iris.2004/iris/iris.html">IRIS</a>  for human.</li>
+</ul>
+<p>The above files are downloaded as public database.
+It&#8217;s stored in <code class="docutils literal"><span class="pre">proportion_data/</span></code> directory
+See doctsring below for detailed explanation.</p>
+<dl class="class">
+<dt id="icepop.cell_proportion.ImmGen">
+<em class="property">class </em><code class="descclassname">icepop.cell_proportion.</code><code class="descname">ImmGen</code><span class="sig-paren">(</span><em>immg_fn</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#ImmGen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.ImmGen" title="Permalink to this definition">¶</a></dt>
+<dd><p>These are classes to process ImmGen data.
+The default input is <code class="docutils literal"><span class="pre">ImmgenCons_all_celltypes_MicroarrayExp.csv</span></code>.
+For each gene compute the weight of 10 cell types. 
+Weight (in percentage) are the proportion of average gene 
+expression of a given cell type over all cell types.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">cell_proportion</span> <span class="k">as</span> <span class="n">cellprop</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ig</span> <span class="o">=</span> <span class="n">cellprop</span><span class="o">.</span><span class="n">ImmGen</span><span class="p">(</span><span class="n">igfile</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ig_weight_dict</span><span class="p">,</span> <span class="n">ig_ctlist</span> <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">ComputePercentageWeight</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="icepop.cell_proportion.ImmGen.ComputeAverage">
+<code class="descname">ComputeAverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#ImmGen.ComputeAverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.ImmGen.ComputeAverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Note that, a given cell type may contain 
+many subtypes (e.g. StemCells contains:
+SC_LT34F_BM, SC_LTSL_BM, SC_STSL_BM, SC_LTSL_FL,... etc).
+Here we compute the average of gene expression
+in the given cell type from its subtypes.</p>
+<p>Let <img class="math" src="images/math/28e003020d0ae96250b302d7d779c791f183f707.png" alt="K"/> be the list of subtypes <img class="math" src="images/math/e9203da50e1059455123460d4e716c9c7f440cc3.png" alt="k"/> in celltype <img class="math" src="images/math/d32c78b759903e3f4bd4fd2ce0b86358f7500c5d.png" alt="j"/>.
+And <img class="math" src="images/math/07ab6360bec44cd3867377a6ca0817a75098d23e.png" alt="e_{ik}"/> is the expression of gene <img class="math" src="images/math/a581f053bbfa5115f42c13094857cdd12a37ec49.png" alt="i"/> in 
+subtype <img class="math" src="images/math/e9203da50e1059455123460d4e716c9c7f440cc3.png" alt="k"/>. The average expression <img class="math" src="images/math/c5fba9df9891161ed1dbfb6ef3f8d94256fc7b5a.png" alt="\bar{e}_{ij}"/> is computed as
+follows:</p>
+<blockquote>
+<div><div class="math">
+<p><img src="images/math/eb23753fbe0084f72b581a7ac9d810e5639e1447.png" alt="\bar{e}_{ij} = \frac{\sum_{k=1}^{K} {e_{ik}}}{|K|}"/></p>
+</div></div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="icepop.cell_proportion.ImmGen.ComputeAverageByOrgans">
+<code class="descname">ComputeAverageByOrgans</code><span class="sig-paren">(</span><em>weighted=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#ImmGen.ComputeAverageByOrgans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.ImmGen.ComputeAverageByOrgans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Group by organs. Then average for for every cell type.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="icepop.cell_proportion.ImmGen.ComputePercentageWeight">
+<code class="descname">ComputePercentageWeight</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#ImmGen.ComputePercentageWeight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.ImmGen.ComputePercentageWeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>After we obtain the average of cell types&#8217; gene expression,
+here given a gene, we compute the weight of each gene 
+in their respective cell type. Let <img class="math" src="images/math/6d490b4717e25b9a55c5c9fcc1d1a28868927210.png" alt="e_{ij}"/> be the expression
+of gene <img class="math" src="images/math/a581f053bbfa5115f42c13094857cdd12a37ec49.png" alt="i"/> in cell type <img class="math" src="images/math/d32c78b759903e3f4bd4fd2ce0b86358f7500c5d.png" alt="j"/>.
+The cell type weight for every gene is computed as follows:</p>
+<blockquote>
+<div><div class="math">
+<p><img src="images/math/d1aa05c46698a2cd018bf3a2d0517a2e227f361a.png" alt="w_{ij} = \frac{\bar{e}_{ij}}{\sum_{j=1}^{C} { \bar{e}_{ij} }}"/></p>
+</div></div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="icepop.cell_proportion.ImmGen.ComputePercentageWeightBracket">
+<code class="descname">ComputePercentageWeightBracket</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#ImmGen.ComputePercentageWeightBracket"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.ImmGen.ComputePercentageWeightBracket" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar with <code class="docutils literal"><span class="pre">ComputePercentageWeight()</span></code>
+Only output them in the form of dictionary of list.
+List contains cell type with bracketted weight,
+(e.g. abTcells(26.12)).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="icepop.cell_proportion.ImmGen.GetGeneCelltypeDoList">
+<code class="descname">GetGeneCelltypeDoList</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#ImmGen.GetGeneCelltypeDoList"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.ImmGen.GetGeneCelltypeDoList" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse ImmGen data and then collect them as
+dictionary of list. Each dictionary of list is constructed
+with gene names and cell types as keys and 
+list of gene expressions as values.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="icepop.cell_proportion.Iris">
+<em class="property">class </em><code class="descclassname">icepop.cell_proportion.</code><code class="descname">Iris</code><span class="sig-paren">(</span><em>irisfn</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#Iris"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.Iris" title="Permalink to this definition">¶</a></dt>
+<dd><p>These are classes to process IRIS data.
+The default input is <code class="docutils literal"><span class="pre">ImmgenCons_all_celltypes_MicroarrayExp.csv</span></code>
+For each gene compute the weight of <em>K</em> cell types. 
+Weight (in percentage) are the proportion of average gene 
+expression of a given cell type over all cell types.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">cell_proportion</span> <span class="k">as</span> <span class="n">cellprop</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iris</span> <span class="o">=</span> <span class="n">cellprop</span><span class="o">.</span><span class="n">ImmGen</span><span class="p">(</span><span class="n">irisfile</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iris_weight_dict</span><span class="p">,</span> <span class="n">iris_ctlist</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">ComputePercentageWeight</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="icepop.cell_proportion.Iris.ComputeAverage">
+<code class="descname">ComputeAverage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#Iris.ComputeAverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.Iris.ComputeAverage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute average for subset of each cell type.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="icepop.cell_proportion.Iris.ComputePercentageWeight">
+<code class="descname">ComputePercentageWeight</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#Iris.ComputePercentageWeight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.Iris.ComputePercentageWeight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same with ImmGen version but here we do it
+using Pandas. Hence the output here is a data frame
+instead of nested dictionary.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cell_proportion.main">
+<code class="descclassname">icepop.cell_proportion.</code><code class="descname">main</code><span class="sig-paren">(</span><em>igfile</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cell_proportion.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cell_proportion.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use for testing this file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>igfile</strong> &#8211; text file, cell population proportion.</td>
+</tr>
+</tbody>
+</table>
+<p>To test this code:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">cell_proportion</span><span class="o">.</span><span class="n">py</span> 
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.cellpop_score">
+<span id="icepop-cellpop-score-module"></span><h2>icepop.cellpop_score module<a class="headerlink" href="#module-icepop.cellpop_score" title="Permalink to this headline">¶</a></h2>
+<p>Functions for calculating cell population.</p>
+<dl class="function">
+<dt id="icepop.cellpop_score.deg_cellpopscore_df">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">deg_cellpopscore_df</code><span class="sig-paren">(</span><em>cellpopdf=None</em>, <em>degdf=None</em>, <em>fclim=None</em>, <em>gene_count=False</em>, <em>logscale=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#deg_cellpopscore_df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.deg_cellpopscore_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the cell population score per sample.
+All done in Pandas data frame.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpopdf</strong> &#8211; Pandas data frame, cell population.</li>
+<li><strong>degdf</strong> &#8211; Pandas data frame, differentially expressed genes (DEGs).</li>
+<li><strong>fclim</strong> &#8211; float, foldchange lower limit thresold.</li>
+<li><strong>logscale</strong> &#8211; boolean, transform fold change to logscale.
+This does not affect the result substansially.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If <em>True</em>, divide by sum of product. The total weight
+will have to result to 1.00.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Score per cell population as data frame.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">cellpop_score</span> <span class="k">as</span> <span class="n">cp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cpop_score_df</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">deg_cellpopscore_df</span><span class="p">(</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">indf</span><span class="p">,</span> <span class="n">fclim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.deg_cellpopscore_generank">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">deg_cellpopscore_generank</code><span class="sig-paren">(</span><em>cellpopdf=None</em>, <em>degdf=None</em>, <em>fclim=None</em>, <em>gene_count=False</em>, <em>logscale=False</em>, <em>cpop_thres='median'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#deg_cellpopscore_generank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.deg_cellpopscore_generank" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the cell population score per sample.
+All done in Pandas data frame.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpopdf</strong> &#8211; Pandas data frame, cell population.</li>
+<li><strong>degdf</strong> &#8211; Pandas data frame, differentially expressed genes (DEGs).</li>
+<li><strong>fclim</strong> &#8211; float, foldchange lower limit thresold.</li>
+<li><strong>logscale</strong> &#8211; boolean, transform fold change to logscale.
+This does not affect the result substansially.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If <em>True</em>, divide by sum of product. The total weight
+will have to result to 1.00.</li>
+<li><strong>cpop_thres</strong> &#8211; string(&#8216;uniform&#8217;,&#8217;median&#8217;,&#8217;q1&#8217;), threshod to choose which cell population
+is induced. This threshold is for cell population score.
+It affects the cell type list to be reported. If uniform,
+we apply 1/(number of cell types).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Score per cell population as data frame.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">cellpop_score</span> <span class="k">as</span> <span class="n">cp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cpop_score_df</span> <span class="o">=</span> <span class="n">cp</span><span class="o">.</span><span class="n">deg_cellpopscore_df</span><span class="p">(</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">indf</span><span class="p">,</span> <span class="n">fclim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">gene_count</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.find_threshold">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">find_threshold</code><span class="sig-paren">(</span><em>score_list</em>, <em>method=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#find_threshold"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.find_threshold" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of values, calculate
+the median, median&#8217;s lower and upper neighbors.
+This is the <em>cell type response threshold</em> (CRT).
+Then return the standard deviation of the three values above.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.get_genebygene_fc_score_matrix_product">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">get_genebygene_fc_score_matrix_product</code><span class="sig-paren">(</span><em>cellpop_df=None</em>, <em>sample_df=None</em>, <em>input_gene_count=None</em>, <em>filt_cellpop=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#get_genebygene_fc_score_matrix_product"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.get_genebygene_fc_score_matrix_product" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate product of FC with ImmGen/IRIS weight
+gene by gene.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpop_df</strong> &#8211; Pandas data frame, cell population.</li>
+<li><strong>sample_df</strong> &#8211; Pandas data frame, sample fold change.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If <em>True</em>,divide by sum of product. The total weight
+will have to result to 1.00.</li>
+<li><strong>filt_cellpop</strong> &#8211; list of cell type that passed threshold.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.get_population_values">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">get_population_values</code><span class="sig-paren">(</span><em>cellpop_df=None</em>, <em>sample_df=None</em>, <em>input_gene_count=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#get_population_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.get_population_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Here is where the actual calculation take place.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpop_df</strong> &#8211; Pandas data frame, cell population.</li>
+<li><strong>sample_df</strong> &#8211; Pandas data frame, sample fold change.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If <em>True</em>,divide by sum of product. The total weight
+will have to result to 1.00.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Pandas series, with score per cell population.
+If the output contains all zeros, it means the genes defined
+in <code class="docutils literal"><span class="pre">sample_df</span></code> is not included in ImmGen/IRIS database.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.main">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for testing this file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.merge_scorematrix_samplefc">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">merge_scorematrix_samplefc</code><span class="sig-paren">(</span><em>cellpop_df=None</em>, <em>sample_df=None</em>, <em>input_gene_count=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#merge_scorematrix_samplefc"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.merge_scorematrix_samplefc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Merge Immgen/IRIS matrix with sample fold change
+data. It is possible that the gene list in sample
+does not exist at all in IRIS/ImmGen. In that case 
+we return the data frames with 0 values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpop_df</strong> &#8211; Pandas data frame, cell population.</li>
+<li><strong>sample_df</strong> &#8211; Pandas data frame, sample fold change.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If <em>True</em>,divide by sum of product. The total weight
+will have to result to 1.00.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Pandas series, merged data.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cellpop_score.sample_response_score">
+<code class="descclassname">icepop.cellpop_score.</code><code class="descname">sample_response_score</code><span class="sig-paren">(</span><em>score_list</em>, <em>method=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cellpop_score.html#sample_response_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cellpop_score.sample_response_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a list of values, calculate the <em>sample response score</em> (SR).
+It calls <a class="reference internal" href="#icepop.cellpop_score.find_threshold" title="icepop.cellpop_score.find_threshold"><code class="xref py py-func docutils literal"><span class="pre">find_threshold()</span></code></a> function that calculates the <em>cell type response
+score</em> (CRT).</p>
+<blockquote>
+<div><div class="math">
+<p><img src="images/math/e7bece729f4df9b02a262d392c63a18292b99cf4.png" alt="SR = -log \Bigg(\frac{CRT}{(1/nof\_cell\_type)} \Bigg) \\
+    = -log (CRT \cdot  nof\_cell\_type)"/></p>
+</div></div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.clock">
+<span id="icepop-clock-module"></span><h2>icepop.clock module<a class="headerlink" href="#module-icepop.clock" title="Permalink to this headline">¶</a></h2>
+<p>Timing decorator.</p>
+<dl class="function">
+<dt id="icepop.clock.clockit">
+<code class="descclassname">icepop.clock.</code><code class="descname">clockit</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/clock.html#clockit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.clock.clockit" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator to compute running time of a function.
+Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">clock</span>
+<span class="nd">@clock</span><span class="o">.</span><span class="n">clockit</span>
+<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+   <span class="k">pass</span> 
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>func</strong> &#8211; A function.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.cluster_cellpop_score">
+<span id="icepop-cluster-cellpop-score-module"></span><h2>icepop.cluster_cellpop_score module<a class="headerlink" href="#module-icepop.cluster_cellpop_score" title="Permalink to this headline">¶</a></h2>
+<p>Here we take clustered genes (<code class="docutils literal"><span class="pre">degdf</span></code>), then 
+for each cluster compute cell population score.</p>
+<dl class="function">
+<dt id="icepop.cluster_cellpop_score.cluster_cellpop_score">
+<code class="descclassname">icepop.cluster_cellpop_score.</code><code class="descname">cluster_cellpop_score</code><span class="sig-paren">(</span><em>cellpopdf=None</em>, <em>degdf=None</em>, <em>fclim=None</em>, <em>gene_count=False</em>, <em>logscale=False</em>, <em>k=None</em>, <em>method='ward'</em>, <em>dist='euclidean'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cluster_cellpop_score.html#cluster_cellpop_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cluster_cellpop_score.cluster_cellpop_score" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpopdf</strong> &#8211; Cell population data frame.</li>
+<li><strong>degdf</strong> &#8211; DEGs data frame.</li>
+<li><strong>fclim</strong> &#8211; float, foldchange lower limit thresold.</li>
+<li><strong>logscale</strong> &#8211; boolean, transform fold change to logscale.
+This does not affect the result substansially.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If <em>True</em>, divide by sum of product. The total weight
+will have to result to 1.00.</li>
+<li><strong>method</strong> &#8211; string(&#8216;complete&#8217;,&#8217;average&#8217;,&#8217;ward&#8217;)</li>
+<li><strong>dist</strong> &#8211; string(&#8216;euclidean&#8217;,&#8217;manhattan&#8217;,&#8217;pearsond&#8217;)</li>
+<li><strong>k</strong> &#8211; integer, number of cluster</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Pandas data frame that contains cell population scores 
+for each cluster and clustered genes with ClusterID added.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">cluster_cellpop_score</span> <span class="k">as</span> <span class="n">ccp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fold_change_lim</span> <span class="o">=</span> <span class="mf">1.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nof_clust</span>       <span class="o">=</span> <span class="mi">15</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">full_clust_cpopdf</span><span class="p">,</span> <span class="n">full_clust_degdf</span> <span class="o">=</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ccp</span><span class="o">.</span><span class="n">cluster_cellpop_score</span><span class="p">(</span><span class="n">cellpopdf</span><span class="o">=</span><span class="n">cellpop_df</span><span class="p">,</span>
+<span class="go">        &gt;&gt;&gt; degdf=indf,fclim=fold_change_lim,</span>
+<span class="go">        &gt;&gt;&gt; gene_count=False,logscale=False, k=nof_clust, method=&quot;ward&quot;,</span>
+<span class="go">        &gt;&gt;&gt; dist=&quot;euclidean&quot;)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">full_clust_cpopdf</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;full_clust.tsv&quot;</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">float_format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%.3f</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.cluster_cellpop_score.main">
+<code class="descclassname">icepop.cluster_cellpop_score.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/cluster_cellpop_score.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.cluster_cellpop_score.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for testing this file.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.clustering">
+<span id="icepop-clustering-module"></span><h2>icepop.clustering module<a class="headerlink" href="#module-icepop.clustering" title="Permalink to this headline">¶</a></h2>
+<p>Perform clustering on genes. 
+Later for each cluster we run cell population scoring.</p>
+<dl class="function">
+<dt id="icepop.clustering.cluster">
+<code class="descclassname">icepop.clustering.</code><code class="descname">cluster</code><span class="sig-paren">(</span><em>degdf=None</em>, <em>k=20</em>, <em>fclim=None</em>, <em>method='complete'</em>, <em>dist='euclidean'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/clustering.html#cluster"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.clustering.cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clustering function. Derived from  scikit-learn&#8217;s
+<a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html#sklearn.cluster.AgglomerativeClustering">AgglomerativeClustering</a>
+method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>degdf</strong> &#8211; DEGs data frame.</li>
+<li><strong>method</strong> &#8211; string(&#8216;complete&#8217;,&#8217;average&#8217;,&#8217;ward&#8217;).</li>
+<li><strong>dist</strong> &#8211; string(&#8216;euclidean&#8217;,&#8217;manhattan&#8217;,&#8217;pearsond&#8217;).</li>
+<li><strong>k</strong> &#8211; integer, number of cluster.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A generator that list gene names for each cluster.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.clustering.main">
+<code class="descclassname">icepop.clustering.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/clustering.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.clustering.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for testing this file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.clustering.pearson_distance">
+<code class="descclassname">icepop.clustering.</code><code class="descname">pearson_distance</code><span class="sig-paren">(</span><em>np_matrix</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/clustering.html#pearson_distance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.clustering.pearson_distance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate distance matrix based on Pearson correlation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>np_matrix</strong> &#8211; a numpy matrix of size (<em>M</em> x <em>N</em>).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A numpy similarity matrix with size (<em>M</em> x <em>M</em>).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.draw_cellpop">
+<span id="icepop-draw-cellpop-module"></span><h2>icepop.draw_cellpop module<a class="headerlink" href="#module-icepop.draw_cellpop" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="icepop.draw_cellpop.bar_plot">
+<code class="descclassname">icepop.draw_cellpop.</code><code class="descname">bar_plot</code><span class="sig-paren">(</span><em>indf</em>, <em>title=None</em>, <em>outfile=None</em>, <em>ymin=0</em>, <em>ymax=0.2</em>, <em>y_thres=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/draw_cellpop.html#bar_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.draw_cellpop.bar_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make barplot. All in one figure. Not very pretty.
+Based on <a class="reference external" href="http://pandas.pydata.org/pandas-docs/version/0.15.0/visualization.html#histograms">Pandas method</a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>indf</strong> &#8211; cell population data frame.</li>
+<li><strong>title</strong> &#8211; string.</li>
+<li><strong>outfile</strong> &#8211; string (e.g. &#8216;plot.png&#8217;).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Histogram plot.
+Image file type is defined automatically from output file extension.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.draw_cellpop.bar_plot_facet">
+<code class="descclassname">icepop.draw_cellpop.</code><code class="descname">bar_plot_facet</code><span class="sig-paren">(</span><em>indf</em>, <em>title=None</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/draw_cellpop.html#bar_plot_facet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.draw_cellpop.bar_plot_facet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make barplot in trellis (facet), using <a class="reference external" href="http://stanford.edu/~mwaskom/software/seaborn/">Seaborn</a>.
+Each sample one figure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>indf</strong> &#8211; cell population data frame.</li>
+<li><strong>title</strong> &#8211; string.</li>
+<li><strong>outfile</strong> &#8211; string (e.g. &#8216;plot.png&#8217;).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Histogram plot facet.
+Image file type is defined automatically from output file extension.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">draw_cellpop</span> <span class="k">as</span> <span class="n">dc</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outfile</span> <span class="o">=</span> <span class="s2">&quot;barplot.png&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dc</span><span class="o">.</span><span class="n">bar_plot_facet</span><span class="p">(</span><span class="n">cpop_score_df</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="n">outfile</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.draw_cellpop.cellpop_cluster_heatmap">
+<code class="descclassname">icepop.draw_cellpop.</code><code class="descname">cellpop_cluster_heatmap</code><span class="sig-paren">(</span><em>cellpop_clust_df</em>, <em>fig_width=5.25</em>, <em>fig_height=10.25</em>, <em>title=None</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/draw_cellpop.html#cellpop_cluster_heatmap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.draw_cellpop.cellpop_cluster_heatmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make heatmap for cell population clusters, using <a class="reference external" href="http://stanford.edu/~mwaskom/software/seaborn/">Seaborn</a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpop_clust_df</strong> &#8211; cell population cluster data frame.</li>
+<li><strong>title</strong> &#8211; string</li>
+<li><strong>outfile</strong> &#8211; string (e.g. &#8216;plot.png&#8217;).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Heatmap, with cluster number as <em>y</em>-axis and cell population as <em>x</em>-axis.
+Image file type is defined automatically from output file extension.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">draw_cellpop</span> <span class="k">as</span> <span class="n">dc</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dc</span><span class="o">.</span><span class="n">cellpop_cluster_heatmap</span><span class="p">(</span><span class="n">full_clust_cpopdf</span><span class="p">,</span> <span class="n">outfile</span><span class="o">=</span><span class="s2">&quot;heatmap.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.draw_cellpop.choose_autopct">
+<code class="descclassname">icepop.draw_cellpop.</code><code class="descname">choose_autopct</code><span class="sig-paren">(</span><em>limit</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/draw_cellpop.html#choose_autopct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.draw_cellpop.choose_autopct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to select autopct based on threshold.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.draw_cellpop.condn_plot">
+<code class="descclassname">icepop.draw_cellpop.</code><code class="descname">condn_plot</code><span class="sig-paren">(</span><em>condn_mat</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/draw_cellpop.html#condn_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.draw_cellpop.condn_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to plot condition number
+with respect to series of specificity threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>condn_mat</strong> &#8211; a numpy matrix generated by <code class="xref py py-func docutils literal"><span class="pre">condn_thres_mat()</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">line plot.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.draw_cellpop.pieplot_deconv">
+<code class="descclassname">icepop.draw_cellpop.</code><code class="descname">pieplot_deconv</code><span class="sig-paren">(</span><em>indf</em>, <em>nrows=3</em>, <em>ncols=4</em>, <em>outfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/draw_cellpop.html#pieplot_deconv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.draw_cellpop.pieplot_deconv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot pie chart for deconvolution of
+gene expression as facet</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>indf</strong> &#8211; cell population data frame.</li>
+<li><strong>nrows</strong> &#8211; integer</li>
+<li><strong>ncols</strong> &#8211; integer</li>
+<li><strong>outfile</strong> &#8211; string (e.g. &#8216;plot.png&#8217;).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.enumerate_output">
+<span id="icepop-enumerate-output-module"></span><h2>icepop.enumerate_output module<a class="headerlink" href="#module-icepop.enumerate_output" title="Permalink to this headline">¶</a></h2>
+<p>Given a fold change threshold, 
+we enumerate all the answers, per sample.
+The output later will be used for 
+JavaScript processing at the fron end.</p>
+<dl class="function">
+<dt id="icepop.enumerate_output.enumerate_geneclust_go_output">
+<code class="descclassname">icepop.enumerate_output.</code><code class="descname">enumerate_geneclust_go_output</code><span class="sig-paren">(</span><em>cellpopdf</em>, <em>degdf</em>, <em>gene_count=False</em>, <em>outfilename=None</em>, <em>k=None</em>, <em>logscale=None</em>, <em>fc_range=None</em>, <em>method='ward'</em>, <em>dist='euclidean'</em>, <em>species=None</em>, <em>pvalim=1</em>, <em>cormeth=None</em>, <em>immune=True</em>, <em>verbose=False</em>, <em>tsv=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/enumerate_output.html#enumerate_geneclust_go_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.enumerate_output.enumerate_geneclust_go_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enumerate all the gene cluster cell population score given 
+the range of fold change threshold. 
+This file output is later to be used to make JavaScript rendering, modeled according to:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cellpopdf</strong> &#8211; Cell population data frame.</li>
+<li><strong>degdf</strong> &#8211; DEGs data frame.</li>
+<li><strong>fc_range</strong> &#8211; list of floats, range of fold change</li>
+<li><strong>logscale</strong> &#8211; boolean, transform fold change to logscale.
+This does not affect the result substansially.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If &#8216;True&#8217;, divide by sum of product. 
+The total weight will have to result to 1.00.</li>
+<li><strong>outfilename</strong> &#8211; output filename. The output type depends on the extension.
+They are (&#8221;.json&#8221;, &#8221;.tsv&#8221;)</li>
+<li><strong>method</strong> &#8211; string(&#8216;complete&#8217;,&#8217;average&#8217;,&#8217;ward&#8217;)</li>
+<li><strong>dist</strong> &#8211; string(&#8216;euclidean&#8217;,&#8217;manhattan&#8217;,&#8217;pearsond&#8217;)</li>
+<li><strong>k</strong> &#8211; integer, number of cluster</li>
+<li><strong>gene_ontology</strong> &#8211; boolean, whether or not to run GO.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The following parameters only take effect when gene_ontology is set to true.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>species</strong> &#8211; string(&#8216;mouse&#8217;,&#8217;human&#8217;,&#8217;rat&#8217;)</li>
+<li><strong>useSymbol</strong> &#8211; string(&#8216;true&#8217;,&#8217;false&#8217;), whether query is done using gene
+symbol, otherwise ProbeID</li>
+<li><strong>pvalim</strong> &#8211; string, lowerbound of P-value for a GO term to be
+displayed.</li>
+<li><strong>cormeth</strong> &#8211; string(&#8216;HOLM_BONFERRONI&#8217;,&#8217;BENJAMINI_HOCHBERG&#8217;,&#8217;BONFERRONI&#8217;)</li>
+<li><strong>immune</strong> &#8211; boolean, show only immune related GO terms.</li>
+<li><strong>verbose</strong> &#8211; boolean, display processing stage.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">JSON format output for both GO as list of list.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">enumerate_output</span> <span class="k">as</span> <span class="n">eo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out_go_json</span> <span class="o">=</span> <span class="s2">&quot;input_cluster_type1_degs.large.go.json&quot;</span> 
+<span class="gp">&gt;&gt;&gt; </span><span class="n">eo</span><span class="o">.</span><span class="n">enumerate_geneclust_go_output</span><span class="p">(</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">indf</span><span class="p">,</span>
+<span class="go">        &gt;&gt;&gt; fc_range=foldchange_range, outfilename = out_go_json,</span>
+<span class="go">        &gt;&gt;&gt; gene_count=True, logscale=False,k=nof_clust, method=&quot;ward&quot;,</span>
+<span class="go">        &gt;&gt;&gt; dist=&quot;euclidean&quot;,</span>
+<span class="go">        &gt;&gt;&gt; species=&#39;mouse&#39;,pvalim=1.00,cormeth=&quot;HOLM_BONFERRONI&quot;,immune=True)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.enumerate_output.enumerate_geneclust_output">
+<code class="descclassname">icepop.enumerate_output.</code><code class="descname">enumerate_geneclust_output</code><span class="sig-paren">(</span><em>cellpopdf</em>, <em>degdf</em>, <em>gene_count=False</em>, <em>outfilename=None</em>, <em>k=None</em>, <em>logscale=None</em>, <em>fc_range=None</em>, <em>method='ward'</em>, <em>dist='euclidean'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/enumerate_output.html#enumerate_geneclust_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.enumerate_output.enumerate_geneclust_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enumerate all the gene cluster cell population score given 
+the range of fold change threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpopdf</strong> &#8211; Cell population data frame.</li>
+<li><strong>degdf</strong> &#8211; DEGs data frame.</li>
+<li><strong>fc_range</strong> &#8211; list of floats, range of fold change</li>
+<li><strong>logscale</strong> &#8211; boolean, transform fold change to logscale.
+This does not affect the result substansially.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If &#8216;True&#8217;, divide by sum of product. 
+The total weight will have to result to 1.00.</li>
+<li><strong>outfilename</strong> &#8211; output filename.</li>
+<li><strong>method</strong> &#8211; string(&#8216;complete&#8217;,&#8217;average&#8217;,&#8217;ward&#8217;)</li>
+<li><strong>dist</strong> &#8211; string(&#8216;euclidean&#8217;,&#8217;manhattan&#8217;,&#8217;pearsond&#8217;)</li>
+<li><strong>k</strong> &#8211; integer, number of cluster</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">JSON format output for both cell population.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">enumerate_output</span> <span class="k">as</span> <span class="n">eo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out_json</span> <span class="o">=</span> <span class="s2">&quot;input_cluster_type1_degs.large.json&quot;</span> 
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nof_clust</span>        <span class="o">=</span> <span class="mi">15</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">foldchange_range</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mf">2.5</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mf">3.5</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mf">4.5</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">eo</span><span class="o">.</span><span class="n">enumerate_geneclust_output</span><span class="p">(</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">indf</span><span class="p">,</span>
+<span class="go">        &gt;&gt;&gt; fc_range=foldchange_range, outfilename = out_json,</span>
+<span class="go">        &gt;&gt;&gt; gene_count=True,  logscale=False,k=nof_clust, method=&quot;ward&quot;,</span>
+<span class="go">        &gt;&gt;&gt; dist=&quot;euclidean&quot;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.enumerate_output.enumerate_output">
+<code class="descclassname">icepop.enumerate_output.</code><code class="descname">enumerate_output</code><span class="sig-paren">(</span><em>cellpopdf</em>, <em>degdf</em>, <em>gene_count=False</em>, <em>outfilename=None</em>, <em>logscale=None</em>, <em>fc_range=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/enumerate_output.html#enumerate_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.enumerate_output.enumerate_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enumerate all the cell population score given 
+the range of fold change threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cellpopdf</strong> &#8211; Cell population data frame.</li>
+<li><strong>degdf</strong> &#8211; DEGs data frame.</li>
+<li><strong>fc_range</strong> &#8211; list of floats, range of fold change</li>
+<li><strong>logscale</strong> &#8211; boolean, transform fold change to logscale.
+This does not affect the result substansially.</li>
+<li><strong>gene_count</strong> &#8211; boolean, normalization method. 
+If &#8216;True&#8217;, divide by sum of product. 
+The total weight will have to result to 1.00.</li>
+<li><strong>outfilename</strong> &#8211; output filename.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">JSON format output.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">enumerate_output</span> <span class="k">as</span> <span class="n">eo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">foldchange_range</span> <span class="o">=</span><span class="p">[</span><span class="mf">1.5</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mf">2.5</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mf">3.5</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mf">4.5</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out_json</span> <span class="o">=</span> <span class="s2">&quot;input_type1_degs.large.json&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">eo</span><span class="o">.</span><span class="n">enumerate_output</span><span class="p">(</span><span class="n">cellpop_df</span><span class="p">,</span> <span class="n">indf</span><span class="p">,</span> <span class="n">fc_range</span> <span class="o">=</span> <span class="n">foldchange_range</span><span class="p">,</span> <span class="n">outfilename</span> <span class="o">=</span> <span class="n">out_json</span><span class="p">,</span>  <span class="n">gene_count</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logscale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.enumerate_output.main">
+<code class="descclassname">icepop.enumerate_output.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/enumerate_output.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.enumerate_output.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for testing this file.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.geo">
+<span id="icepop-geo-module"></span><h2>icepop.geo module<a class="headerlink" href="#module-icepop.geo" title="Permalink to this headline">¶</a></h2>
+<p>Stores method to parse the <a class="reference external" href="http://www.ncbi.nlm.nih.gov/geo/">GEO</a> file
+in various formats. These functions are inherited
+from <a class="reference external" href="https://geoparse.readthedocs.org">GEOparse</a> package.</p>
+<dl class="function">
+<dt id="icepop.geo.accumulate">
+<code class="descclassname">icepop.geo.</code><code class="descname">accumulate</code><span class="sig-paren">(</span><em>handle=None</em>, <em>type='gsm'</em>, <em>anncol='Gene Symbol'</em>, <em>gpl_id=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/geo.html#accumulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.geo.accumulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instead of iterating content of GEO object,
+we return one single Data frame with combined
+GSMs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>handle</strong> &#8211; a GSE handler.</li>
+<li><strong>anncol</strong> &#8211; string, annotation column. Derived from GPL class.</li>
+<li><strong>type</strong> &#8211; string, iterator type.</li>
+<li><strong>gpl_id</strong> &#8211; int, index of GPL id you want to return.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Data frame from multiple
+GSMs name and expression values data frame.
+Probe names and gene symbols are included.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">full_df</span> <span class="o">=</span> <span class="n">geo</span><span class="o">.</span><span class="n">accumulate</span><span class="p">(</span><span class="n">handle</span><span class="o">=</span><span class="n">gse</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s2">&quot;gsm&quot;</span><span class="p">,</span><span class="n">anncol</span><span class="o">=</span><span class="s2">&quot;Gene Symbol&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.geo.get_gpl">
+<code class="descclassname">icepop.geo.</code><code class="descname">get_gpl</code><span class="sig-paren">(</span><em>handle=None</em>, <em>id=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/geo.html#get_gpl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.geo.get_gpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to return meta data from the given
+GSE object.</p>
+<p>:param id:int, List id of which you want to return the GPL.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.geo.iterate">
+<code class="descclassname">icepop.geo.</code><code class="descname">iterate</code><span class="sig-paren">(</span><em>handle=None</em>, <em>type='gsm'</em>, <em>anncol='Gene Symbol'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/geo.html#iterate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.geo.iterate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Functions to iterate content of GEO object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>handle</strong> &#8211; a GSE handler.</li>
+<li><strong>type</strong> &#8211; string, iterator type.</li>
+<li><strong>anncol</strong> &#8211; string, annotation column. Derived from GPL class.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Iterator that holds GSM name and expression values data frame.
+Probe names and gene symbols are included.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">gsm_name</span><span class="p">,</span> <span class="n">gsm_df</span> <span class="ow">in</span> <span class="n">geo</span><span class="o">.</span><span class="n">iterate_gsm</span><span class="p">(</span><span class="n">handle</span><span class="o">=</span><span class="n">gse</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span> <span class="n">gsm_name</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span> <span class="n">gsm_df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.geo.load">
+<code class="descclassname">icepop.geo.</code><code class="descname">load</code><span class="sig-paren">(</span><em>geoid=None</em>, <em>destdir=None</em>, <em>filepath=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/geo.html#load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.geo.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to download GEO file in SOFT format.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>geo</strong> &#8211; string, GEO id (e.g. &#8220;GSE69886&#8221;)</li>
+<li><strong>destdir</strong> &#8211; string, destination to store  the files.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">geo</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gse</span> <span class="o">=</span> <span class="n">geo</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">geoid</span><span class="o">=</span><span class="s2">&quot;GSE74306&quot;</span><span class="p">,</span> <span class="n">destdir</span><span class="o">=</span><span class="s2">&quot;./&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or if the data is already downloaded</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">gse</span> <span class="o">=</span> <span class="n">geo</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filepath</span><span class="o">=</span><span class="s2">&quot;./GSE74306.soft.gz&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.input_reader">
+<span id="icepop-input-reader-module"></span><h2>icepop.input_reader module<a class="headerlink" href="#module-icepop.input_reader" title="Permalink to this headline">¶</a></h2>
+<p>Functions to read input with various format:</p>
+<blockquote>
+<div><ul class="simple">
+<li>DEG (fold change)</li>
+<li>RAW expression data from GEO format.</li>
+</ul>
+</div></blockquote>
+<dl class="function">
+<dt id="icepop.input_reader.load_hdf_cvfilter">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">load_hdf_cvfilter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#load_hdf_cvfilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.load_hdf_cvfilter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reading HDF file that
+contain gene list and the corresponding CV filter,
+for the given organ. Calculated using <a class="reference external" href="http://barcode.luhs.org/">BARCODE 3.0</a> .</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.main">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Description of main</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_file">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_file</code><span class="sig-paren">(</span><em>infile</em>, <em>mode='DEG'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reading various input file.
+Supported format are tab delimited (TSV),
+comma delimited (CSV), Excel (.xlsx or .xls).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mode</strong> &#8211; string(&#8216;DEG&#8217;,&#8217;RAW&#8217;).
+DEG (default) is in fold change format,
+RAW in GEO format of raw expression values.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Pandas data frame.</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">input_reader</span> <span class="k">as</span> <span class="n">ir</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deg_infile</span> <span class="o">=</span> <span class="s2">&quot;input_type1_degs.tsv&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">indf</span>       <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">deg_infile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;DEG&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_hdf">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_hdf</code><span class="sig-paren">(</span><em>species=None</em>, <em>organs=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_hdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_hdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>HDF reading is faster than pickle.
+Here given the species, return the weighted proportion
+as dataframe.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>species</strong> &#8211; species, used to indicate the h5 file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Pandas data frame.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_hdf_expr">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_hdf_expr</code><span class="sig-paren">(</span><em>species=None</em>, <em>organs=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_hdf_expr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_hdf_expr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Here given the species, return the weighted expression
+for each celltypes as dataframe.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>species</strong> &#8211; species, used to indicate the h5 file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Pandas data frame.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_hdf_from_file">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_hdf_from_file</code><span class="sig-paren">(</span><em>infile=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_hdf_from_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_hdf_from_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>HDF reading from input file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>infile</strong> &#8211; A HDF file, usually from ImmGen/IRIS proportion.
+Made by serialize_cell_proportion.py.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_immgen_hdf_pheno">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_immgen_hdf_pheno</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_immgen_hdf_pheno"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_immgen_hdf_pheno" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for reading only phenotype granularity
+type of ImmGen data. It returns two
+data frames: 1) scoring matrix; 2) phenotype celltype correspondence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_iris_hdf_pheno">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_iris_hdf_pheno</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_iris_hdf_pheno"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_iris_hdf_pheno" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for reading only phenotype granularity
+type of ImmGen data. It returns two
+data frames: 1) scoring matrix; 2) phenotype celltype correspondence.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.input_reader.read_specificity_pickle">
+<code class="descclassname">icepop.input_reader.</code><code class="descname">read_specificity_pickle</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/input_reader.html#read_specificity_pickle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.input_reader.read_specificity_pickle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Description of read from pickle file.
+The output is dictionary of list which 
+contain list of genes sorted by the most specific one.
+The file is created by serialized_cell_proportion.py</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.serialize_cell_proportion">
+<span id="icepop-serialize-cell-proportion-module"></span><h2>icepop.serialize_cell_proportion module<a class="headerlink" href="#module-icepop.serialize_cell_proportion" title="Permalink to this headline">¶</a></h2>
+<p>This code is only to be used once. 
+It creates Pickle or <a class="reference external" href="https://en.wikipedia.org/wiki/Hierarchical_Data_Format">HDF5</a> format files.
+So that faster loading of data structure can be made.</p>
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.main">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the actual HDF files for both ImmGen and IRIS.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_immgen_expr">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_immgen_expr</code><span class="sig-paren">(</span><em>out_type='HDF5'</em>, <em>group_by='organs'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_immgen_expr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_immgen_expr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the persistent files for ImmGen.
+We implement only for HDF5 as Pandas table
+But here we just use expression without weighting them.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_immgen_expr_cpop_phendict">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_immgen_expr_cpop_phendict</code><span class="sig-paren">(</span><em>out_type='HDF5'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_immgen_expr_cpop_phendict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_immgen_expr_cpop_phendict" title="Permalink to this definition">¶</a></dt>
+<dd><p>From original file, we create
+a HDF5 that list all the cell population and phenotype as
+data frame</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_immgen_expr_phenotype">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_immgen_expr_phenotype</code><span class="sig-paren">(</span><em>out_type='HDF5'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_immgen_expr_phenotype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_immgen_expr_phenotype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain gene expression without summarizing, 
+i.e. include all phenotypes.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_immgen_specificity">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_immgen_specificity</code><span class="sig-paren">(</span><em>species='mouse', method='sparseness', to_exclude=['gdTCells']</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_immgen_specificity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_immgen_specificity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make specificity file in HDF5.
+The data structure is mouse.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_immgen_weight">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_immgen_weight</code><span class="sig-paren">(</span><em>out_type='HDF5'</em>, <em>group_by=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_immgen_weight"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_immgen_weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the persistent files for ImmGen.
+Now we implement for HDF5 as Pandas table
+and Pickle as nested dictionary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_iris">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_iris</code><span class="sig-paren">(</span><em>out_type='HDF5'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_iris"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_iris" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the persistent files for IRIS.
+Now we implement for HDF5 as Pandas table
+and Pickle as nested dictionary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_iris_expr">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_iris_expr</code><span class="sig-paren">(</span><em>out_type='HDF5'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_iris_expr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_iris_expr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the persistent files for IRIS.
+Now we implement for HDF5 as Pandas table
+and Pickle as nested dictionary.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_iris_expr_cpop_phendict">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_iris_expr_cpop_phendict</code><span class="sig-paren">(</span><em>out_type='HDF5'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_iris_expr_cpop_phendict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_iris_expr_cpop_phendict" title="Permalink to this definition">¶</a></dt>
+<dd><p>From original file, we create
+a HDF5 that list all the cell population and phenotype as
+data frame</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.serialize_cell_proportion.make_iris_expr_phenotype">
+<code class="descclassname">icepop.serialize_cell_proportion.</code><code class="descname">make_iris_expr_phenotype</code><span class="sig-paren">(</span><em>out_type='HDF5'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/serialize_cell_proportion.html#make_iris_expr_phenotype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.serialize_cell_proportion.make_iris_expr_phenotype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain gene expression without summarizing, 
+i.e. include all phenotypes.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.species_cell_proportion">
+<span id="icepop-species-cell-proportion-module"></span><h2>icepop.species_cell_proportion module<a class="headerlink" href="#module-icepop.species_cell_proportion" title="Permalink to this headline">¶</a></h2>
+<p>This modules has interface to let user
+choose which species they want. And return
+the cell population weight accordingly.
+Additional option include choosing between
+Pandas dataframe or standard nested dictionary.
+It behaves as the extension of <code class="docutils literal"><span class="pre">cell_proportion</span></code> module.</p>
+<dl class="function">
+<dt id="icepop.species_cell_proportion.choose_organ">
+<code class="descclassname">icepop.species_cell_proportion.</code><code class="descname">choose_organ</code><span class="sig-paren">(</span><em>cp_organ_df</em>, <em>organ_name</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/species_cell_proportion.html#choose_organ"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.species_cell_proportion.choose_organ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Description of choose_organ</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.species_cell_proportion.get_pheno_prop_immgen">
+<code class="descclassname">icepop.species_cell_proportion.</code><code class="descname">get_pheno_prop_immgen</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/species_cell_proportion.html#get_pheno_prop_immgen"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.species_cell_proportion.get_pheno_prop_immgen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar with the output generated by scp.get_prop().
+It returns cell type proportion, but at phenotype level.
+Also returns a table that list the phenotype correspondence
+with cell type and organ.</p>
+<p>Specifically for ImmGen only.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.species_cell_proportion.get_pheno_prop_iris">
+<code class="descclassname">icepop.species_cell_proportion.</code><code class="descname">get_pheno_prop_iris</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/species_cell_proportion.html#get_pheno_prop_iris"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.species_cell_proportion.get_pheno_prop_iris" title="Permalink to this definition">¶</a></dt>
+<dd><p>Similar with the output generated by scp.get_prop().
+It returns cell type proportion, but at phenotype level.
+Also returns a table that list the phenotype correspondence
+with cell type and organ.</p>
+<p>Specifically for IRIS only.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.species_cell_proportion.get_prop">
+<code class="descclassname">icepop.species_cell_proportion.</code><code class="descname">get_prop</code><span class="sig-paren">(</span><em>species='mouse'</em>, <em>mode=''</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/species_cell_proportion.html#get_prop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.species_cell_proportion.get_prop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get cell type proportion.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>species</strong> &#8211; string(&#8216;mouse&#8217;,&#8217;human&#8217;)
+mouse (default) obtained from ImmGen database and human from IRIS.</li>
+<li><strong>mode</strong> &#8211; string(&#8216;pandas_df&#8217;,&#8217;dict&#8217;)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">function to read persistence file.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">icepop</span> <span class="k">import</span> <span class="n">species_cell_proportion</span> <span class="k">as</span> <span class="n">scp</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cellpop_df</span> <span class="o">=</span> <span class="n">scp</span><span class="o">.</span><span class="n">get_prop</span><span class="p">(</span><span class="n">species</span><span class="o">=</span><span class="s2">&quot;mouse&quot;</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;pandas_df&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.species_cell_proportion.main">
+<code class="descclassname">icepop.species_cell_proportion.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/species_cell_proportion.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.species_cell_proportion.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to execute this file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.species_cell_proportion.normalize_tables">
+<code class="descclassname">icepop.species_cell_proportion.</code><code class="descname">normalize_tables</code><span class="sig-paren">(</span><em>exp_pheno_df</em>, <em>cellpop_pheno_name_table_df</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/species_cell_proportion.html#normalize_tables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.species_cell_proportion.normalize_tables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expression normalization routines</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.specificity">
+<span id="icepop-specificity-module"></span><h2>icepop.specificity module<a class="headerlink" href="#module-icepop.specificity" title="Permalink to this headline">¶</a></h2>
+<p>Various function to calculate specificity
+score of every gene in proportion data (ImmGen/IRIS)</p>
+<dl class="function">
+<dt id="icepop.specificity.assign_specificity_score">
+<code class="descclassname">icepop.specificity.</code><code class="descname">assign_specificity_score</code><span class="sig-paren">(</span><em>df</em>, <em>method='sparseness'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#assign_specificity_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.assign_specificity_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign specificity score to the ImmGen/IRIS data. 
+:param df: Pandas data frame, generally proportion file.
+:param method: str(&#8220;sparseness&#8221;,&#8221;js&#8221;)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">a Panda data frame with where every genes will have its specificity score.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.bind_sparseness_score">
+<code class="descclassname">icepop.specificity.</code><code class="descname">bind_sparseness_score</code><span class="sig-paren">(</span><em>indf=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#bind_sparseness_score"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.bind_sparseness_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a Pandas data frame with genes
+as row and column of cell types or samples
+append sparseness score at the end</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Indf:</th><td class="field-body">Pandas data frame.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Pandas data frame with appended sparseness score.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.condn_thres_mat">
+<code class="descclassname">icepop.specificity.</code><code class="descname">condn_thres_mat</code><span class="sig-paren">(</span><em>df</em>, <em>method='sparseness'</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#condn_thres_mat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.condn_thres_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to enumerate condition number from series of thresholds.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>df</strong> &#8211; Pandas data frame, generally proportion file.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">numpy (3 x 2) matrix, which stores list of threshold, condition         number and number of markers.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.find_best_marker_genes">
+<code class="descclassname">icepop.specificity.</code><code class="descname">find_best_marker_genes</code><span class="sig-paren">(</span><em>df</em>, <em>method='sparseness'</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#find_best_marker_genes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.find_best_marker_genes" title="Permalink to this definition">¶</a></dt>
+<dd><p>We use <cite>condition number</cite> to choose the best
+specificity threshold.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>df</strong> &#8211; Pandas data frame, generally proportion file.</li>
+<li><strong>method</strong> &#8211; str(&#8220;sparseness&#8221;,&#8221;js&#8221;)</li>
+<li><strong>verbose</strong> &#8211; boolean</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a Panda data frame with selected marker genes.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.find_marker_genes">
+<code class="descclassname">icepop.specificity.</code><code class="descname">find_marker_genes</code><span class="sig-paren">(</span><em>df</em>, <em>method='sparseness'</em>, <em>lim=0.8</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#find_marker_genes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.find_marker_genes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find marker genes from expression cell population by
+some specificity score.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>df</strong> &#8211; Pandas data frame, generally proportion file.</li>
+<li><strong>method</strong> &#8211; str(&#8220;sparseness&#8221;,&#8221;js&#8221;)</li>
+<li><strong>lim</strong> &#8211; float, threshold to select</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.find_topk_marker_genes">
+<code class="descclassname">icepop.specificity.</code><code class="descname">find_topk_marker_genes</code><span class="sig-paren">(</span><em>df</em>, <em>method='sparseness'</em>, <em>to_exclude=None</em>, <em>lim=0.8</em>, <em>top_k=1</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#find_topk_marker_genes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.find_topk_marker_genes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find marker genes from expression cell population by
+some specificity score. Then select to 10 genes, 
+one gene which is most specific in one cell type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>df</strong> &#8211; Pandas data frame, generally proportion file.</li>
+<li><strong>to_exclude</strong> &#8211; list of cell type to exclude. If None,
+average between abTcell and gdTcell will be performed.</li>
+<li><strong>method</strong> &#8211; str(&#8220;sparseness&#8221;,&#8221;js&#8221;)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a Panda data frame with selected marker genes.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.jsd_vectorized">
+<code class="descclassname">icepop.specificity.</code><code class="descname">jsd_vectorized</code><span class="sig-paren">(</span><em>xs=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#jsd_vectorized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.jsd_vectorized" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using Jensen-Shannon distance calculate 
+the specificity score of every gene with respect to the  cell type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>xs</strong> &#8211; Numpy matrix, which contain list of expression from all cell types.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Numpy array (1D),  value with sparsity scores for every genes.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.normalize">
+<code class="descclassname">icepop.specificity.</code><code class="descname">normalize</code><span class="sig-paren">(</span><em>dfv=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#normalize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.normalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Normalize every row.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dfv</strong> &#8211; Numpy matrix.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Numpy matrix, with normalize score.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.specificity.sparseness">
+<code class="descclassname">icepop.specificity.</code><code class="descname">sparseness</code><span class="sig-paren">(</span><em>xs=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/specificity.html#sparseness"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.specificity.sparseness" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function to calculate sparseness score
+of a given gene.
+The value range from 0 to 1. Score 1 means
+that the gene is perfectly expressed in one
+cell type. Calcuated the following way (Hoyer 2004):</p>
+<blockquote>
+<div><div class="math">
+<p><img src="images/math/06e79231853370f92143f28a76ffa6714c62d212.png" alt="sparseness(x) = \frac{\sqrt{n}-\frac{\sum{||x_{i}||}}{\sqrt{\sum{x_{i}^2}}}}{\sqrt{n}-1}"/></p>
+</div></div></blockquote>
+<p>Here <img class="math" src="images/math/413f8a8e40062a9090d9d50b88bc7b551b314c26.png" alt="n"/> refers to the number of cell types and <img class="math" src="images/math/33dfc32d00ebd5c5791c824010a155d9e5630b6f.png" alt="x_i"/>
+expression of a gene in cell type <img class="math" src="images/math/a581f053bbfa5115f42c13094857cdd12a37ec49.png" alt="i"/>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>xs</strong> &#8211; Numpy matrix, which contain list of expression from all cell types.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Numpy array (1D),  value with sparsity scores for every genes.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop.targetmine_query_urllib">
+<span id="icepop-targetmine-query-urllib-module"></span><h2>icepop.targetmine_query_urllib module<a class="headerlink" href="#module-icepop.targetmine_query_urllib" title="Permalink to this headline">¶</a></h2>
+<p>Programmatic way to do GO analysis.
+It uses <a class="reference external" href="http://targetmine.mizuguchilab.org/">TargetMine</a>.</p>
+<dl class="function">
+<dt id="icepop.targetmine_query_urllib.get_tgm_data">
+<code class="descclassname">icepop.targetmine_query_urllib.</code><code class="descname">get_tgm_data</code><span class="sig-paren">(</span><em>genelist_string</em>, <em>species='mouse'</em>, <em>immune=True</em>, <em>useSymbol='true'</em>, <em>pvalim='1.00'</em>, <em>cormeth='HOLM_BONFERRONI'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/targetmine_query_urllib.html#get_tgm_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.targetmine_query_urllib.get_tgm_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get GO enrichment given list of genes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>genelist_string</strong> &#8211; string, comma separated (e.g. &#8220;Ssb,Eny2,Hsp90b1,Ube3a,Cry1,Prkaa1&#8221;).</li>
+<li><strong>species</strong> &#8211; string(&#8216;mouse&#8217;,&#8217;human&#8217;,&#8217;rat&#8217;).</li>
+<li><strong>useSymbol</strong> &#8211; string(&#8216;true&#8217;,&#8217;false&#8217;), whether query is done using gene symbol, otherwise ProbeID.</li>
+<li><strong>pvalim</strong> &#8211; string(&#8216;1.00&#8217;,&#8216;0.01&#8217;), lowerbound of P-value for a GO term to be displayed.</li>
+<li><strong>cormeth</strong> &#8211; string(&#8216;HOLM_BONFERRONI&#8217;,&#8217;BENJAMINI_HOCHBERG&#8217;,&#8217;BONFERRONI&#8217;)</li>
+<li><strong>immune</strong> &#8211; boolean, show only immune related GO terms.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Generator for GO with enrichment Pvalues</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.targetmine_query_urllib.inlist">
+<code class="descclassname">icepop.targetmine_query_urllib.</code><code class="descname">inlist</code><span class="sig-paren">(</span><em>substring_list</em>, <em>query</em><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/targetmine_query_urllib.html#inlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.targetmine_query_urllib.inlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the sustring in the list is contained
+in the string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="icepop.targetmine_query_urllib.main">
+<code class="descclassname">icepop.targetmine_query_urllib.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="modules/icepop/targetmine_query_urllib.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#icepop.targetmine_query_urllib.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use for testing this file.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-icepop">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-icepop" title="Permalink to this headline">¶</a></h2>
+<p>This is a package for estimating immune cell population
+from differentially expressed genes.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">icepop package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-icepop.cell_proportion">icepop.cell_proportion module</a></li>
+<li><a class="reference internal" href="#module-icepop.cellpop_score">icepop.cellpop_score module</a></li>
+<li><a class="reference internal" href="#module-icepop.clock">icepop.clock module</a></li>
+<li><a class="reference internal" href="#module-icepop.cluster_cellpop_score">icepop.cluster_cellpop_score module</a></li>
+<li><a class="reference internal" href="#module-icepop.clustering">icepop.clustering module</a></li>
+<li><a class="reference internal" href="#module-icepop.draw_cellpop">icepop.draw_cellpop module</a></li>
+<li><a class="reference internal" href="#module-icepop.enumerate_output">icepop.enumerate_output module</a></li>
+<li><a class="reference internal" href="#module-icepop.geo">icepop.geo module</a></li>
+<li><a class="reference internal" href="#module-icepop.input_reader">icepop.input_reader module</a></li>
+<li><a class="reference internal" href="#module-icepop.serialize_cell_proportion">icepop.serialize_cell_proportion module</a></li>
+<li><a class="reference internal" href="#module-icepop.species_cell_proportion">icepop.species_cell_proportion module</a></li>
+<li><a class="reference internal" href="#module-icepop.specificity">icepop.specificity module</a></li>
+<li><a class="reference internal" href="#module-icepop.targetmine_query_urllib">icepop.targetmine_query_urllib module</a></li>
+<li><a class="reference internal" href="#module-icepop">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="script.html" title="previous chapter">Cell population score (DEGs)</a></li>
+      <li>Next: <a href="roadmap.html" title="next chapter">Development roadmap</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

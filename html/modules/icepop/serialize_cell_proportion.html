@@ -1,0 +1,403 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>icepop.serialize_cell_proportion &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="../../static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../static/jquery.js"></script>
+    <script type="text/javascript" src="../../static/underscore.js"></script>
+    <script type="text/javascript" src="../../static/doctools.js"></script>
+    <link rel="shortcut icon" href="../../static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for icepop.serialize_cell_proportion</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">This code is only to be used once. </span>
+<span class="sd">It creates Pickle or `HDF5 &lt;https://en.wikipedia.org/wiki/Hierarchical_Data_Format&gt;`_ format files.</span>
+<span class="sd">So that faster loading of data structure can be made.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__author__</span>    <span class="o">=</span> <span class="s2">&quot;Edward Wijaya &lt;ewijaya@gmail.com&gt;&quot;</span>
+<span class="n">__copyright__</span> <span class="o">=</span> <span class="s2">&quot;Copyright 2015&quot;</span>
+<span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">clock</span> <span class="k">import</span> <span class="n">clockit</span>
+<span class="kn">import</span> <span class="nn">cell_proportion</span> <span class="k">as</span> <span class="nn">cellprop</span>
+<span class="kn">import</span> <span class="nn">input_reader</span> <span class="k">as</span> <span class="nn">ir</span>
+<span class="kn">import</span> <span class="nn">specificity</span> <span class="k">as</span> <span class="nn">sp</span>
+
+
+<span class="nd">@clockit</span>
+<span class="k">def</span> <span class="nf">make_pickle</span><span class="p">(</span><span class="n">indict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to make pickle file. </span>
+<span class="sd">    This is considered not safe and slow.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pickle_output</span> <span class="o">=</span> <span class="s2">&quot;proportion_data/immgen_mouse.pkl&quot;</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_output</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">indict</span><span class="p">,</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span>    
+
+<div class="viewcode-block" id="make_iris_expr_cpop_phendict"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_iris_expr_cpop_phendict">[docs]</a><span class="k">def</span> <span class="nf">make_iris_expr_cpop_phendict</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    From original file, we create</span>
+<span class="sd">    a HDF5 that list all the cell population and phenotype as</span>
+<span class="sd">    data frame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;./proportion_data/IRIS.csv&#39;</span>
+    <span class="n">df</span>              <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index_col</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+    <span class="n">df</span>              <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span>      <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;celltype&quot;</span><span class="p">,</span> <span class="s2">&quot;phenotype&quot;</span><span class="p">]</span>
+    <span class="n">remove_list</span>     <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span><span class="s2">&quot;Probes&quot;</span><span class="p">,</span><span class="s2">&quot;Genes&quot;</span><span class="p">]</span>
+    <span class="n">df</span>              <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="o">~</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;celltype&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">remove_list</span><span class="p">)]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;organs&quot;</span><span class="p">]</span>    <span class="o">=</span> <span class="s2">&quot;PBMC&quot;</span>
+    <span class="n">df</span>              <span class="o">=</span> <span class="n">df</span><span class="p">[</span> <span class="p">[</span><span class="s2">&quot;celltype&quot;</span><span class="p">,</span><span class="s2">&quot;organs&quot;</span><span class="p">,</span><span class="s2">&quot;phenotype&quot;</span><span class="p">]</span> <span class="p">]</span>
+    <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/iris_human_celltype_phenotype.h5&quot;</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="c1"># print df</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="make_immgen_expr_cpop_phendict"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_immgen_expr_cpop_phendict">[docs]</a><span class="k">def</span> <span class="nf">make_immgen_expr_cpop_phendict</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    From original file, we create</span>
+<span class="sd">    a HDF5 that list all the cell population and phenotype as</span>
+<span class="sd">    data frame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;./proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv&#39;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">nrows</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;celltype&#39;</span><span class="p">,</span><span class="s1">&#39;organs&#39;</span><span class="p">,</span> <span class="s1">&#39;phenotype&#39;</span><span class="p">]</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse_celltype_phenotype.h5&quot;</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+<div class="viewcode-block" id="make_iris_expr_phenotype"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_iris_expr_phenotype">[docs]</a><span class="k">def</span> <span class="nf">make_iris_expr_phenotype</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Obtain gene expression without summarizing, </span>
+<span class="sd">    i.e. include all phenotypes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span>  <span class="o">=</span> <span class="s1">&#39;./proportion_data/IRIS.csv&#39;</span>
+    <span class="n">df</span>              <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">comment</span><span class="o">=</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+    <span class="n">colnames</span>        <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">wanted_colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">colnames</span><span class="p">[</span><span class="mi">4</span><span class="p">]]</span> <span class="o">+</span> <span class="n">colnames</span><span class="p">[</span><span class="mi">11</span><span class="p">:</span><span class="mi">33</span><span class="p">]</span>
+    <span class="n">new_df</span>          <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">wanted_colnames</span><span class="p">]</span>
+    <span class="n">new_df</span><span class="o">.</span><span class="n">columns</span>  <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Genes&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">colnames</span><span class="p">[</span><span class="mi">11</span><span class="p">:</span><span class="mi">33</span><span class="p">]</span>
+    <span class="n">new_df</span>          <span class="o">=</span> <span class="n">new_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">new_df</span><span class="p">[</span><span class="s2">&quot;Genes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_df</span><span class="p">[</span><span class="s2">&quot;Genes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/iris_human_expr_by_phenotype.h5&quot;</span>
+    <span class="n">new_df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span></div>
+    
+<div class="viewcode-block" id="make_immgen_expr_phenotype"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_immgen_expr_phenotype">[docs]</a><span class="k">def</span> <span class="nf">make_immgen_expr_phenotype</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Obtain gene expression without summarizing, </span>
+<span class="sd">    i.e. include all phenotypes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;./proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv&#39;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">parsers</span><span class="o">.</span><span class="n">read_table</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;ProbeSetID&#39;</span><span class="p">,</span><span class="s1">&#39;Description&#39;</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">phenlist</span> <span class="o">=</span> <span class="n">colnames</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Genes&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">phenlist</span>
+    <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse_expr_by_phenotype.h5&quot;</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> </div>
+
+    
+
+<div class="viewcode-block" id="make_immgen_expr"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_immgen_expr">[docs]</a><span class="k">def</span> <span class="nf">make_immgen_expr</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">,</span> <span class="n">group_by</span><span class="o">=</span><span class="s2">&quot;organs&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the persistent files for ImmGen.</span>
+<span class="sd">    We implement only for HDF5 as Pandas table</span>
+<span class="sd">    But here we just use expression without weighting them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;../proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv&#39;</span>
+    <span class="n">ig</span>             <span class="o">=</span> <span class="n">cellprop</span><span class="o">.</span><span class="n">ImmGen</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">out_type</span> <span class="o">==</span><span class="s2">&quot;HDF5&quot;</span><span class="p">:</span>
+        <span class="c1"># Only IMMGEN contain organ</span>
+        <span class="k">if</span> <span class="n">group_by</span> <span class="o">==</span> <span class="s2">&quot;organ&quot;</span><span class="p">:</span>
+            <span class="n">df</span>            <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">ComputeAverageByOrgans</span><span class="p">()</span>
+
+            <span class="n">hdf_output_organ</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse_expr_organ.h5&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output_organ</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ig_expr</span>        <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">ComputeAverage</span><span class="p">()</span>
+            <span class="n">ig_expr_dict</span>   <span class="o">=</span> <span class="n">ig_expr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">ig_expr_dict</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">convert_objects</span><span class="p">(</span><span class="n">convert_numeric</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Genes&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse_expr.h5&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+    
+
+<div class="viewcode-block" id="make_immgen_weight"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_immgen_weight">[docs]</a><span class="k">def</span> <span class="nf">make_immgen_weight</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">,</span><span class="n">group_by</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the persistent files for ImmGen.</span>
+<span class="sd">    Now we implement for HDF5 as Pandas table</span>
+<span class="sd">    and Pickle as nested dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;./proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv&#39;</span>
+    <span class="n">ig</span> <span class="o">=</span> <span class="n">cellprop</span><span class="o">.</span><span class="n">ImmGen</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">)</span>
+    <span class="n">igweight_dict</span><span class="p">,</span> <span class="n">celltype_list</span>  <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">ComputePercentageWeight</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">out_type</span> <span class="o">==</span><span class="s2">&quot;HDF5&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">group_by</span> <span class="o">==</span> <span class="s1">&#39;organ&#39;</span><span class="p">:</span>
+            <span class="n">df</span>            <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">ComputeAverageByOrgans</span><span class="p">(</span><span class="n">weighted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">/</span><span class="n">df</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">*</span> <span class="mi">100</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse_organ.h5&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">igweight_dict</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="c1"># Normalize column so that it sums to 1.</span>
+            <span class="c1"># This makes the interpretation easier. </span>
+            <span class="c1"># So that when the fold change is constant for all genes </span>
+            <span class="c1"># the histogram will also be flat.</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">/</span><span class="n">df</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">*</span> <span class="mi">100</span>
+
+            <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Genes&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse.h5&quot;</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">out_type</span> <span class="o">==</span> <span class="s2">&quot;pickle&quot;</span><span class="p">:</span>
+        <span class="n">pickle_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse.pkl&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_output</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">igweight_dict</span><span class="p">,</span><span class="n">output</span><span class="p">)</span>
+        <span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        
+    <span class="k">return</span></div>
+    
+<div class="viewcode-block" id="make_iris"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_iris">[docs]</a><span class="k">def</span> <span class="nf">make_iris</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the persistent files for IRIS.</span>
+<span class="sd">    Now we implement for HDF5 as Pandas table</span>
+<span class="sd">    and Pickle as nested dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;./proportion_data/IRIS.csv&#39;</span>
+    <span class="n">iris</span> <span class="o">=</span> <span class="n">cellprop</span><span class="o">.</span><span class="n">Iris</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">)</span>
+    <span class="n">irisweight_df</span><span class="p">,</span> <span class="n">celltype_list</span>  <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">ComputePercentageWeight</span><span class="p">()</span>
+
+    <span class="n">irisweight_df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;Genes&quot;</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">irisweight_df</span> <span class="o">=</span> <span class="p">(</span><span class="n">irisweight_df</span><span class="o">/</span><span class="n">irisweight_df</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">*</span> <span class="mi">100</span>
+    <span class="n">irisweight_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Genes&quot;</span>
+    <span class="n">irisweight_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">irisweight_df</span><span class="p">[</span><span class="s2">&quot;Genes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">irisweight_df</span><span class="p">[</span><span class="s1">&#39;Genes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+    <span class="n">irisweight_df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="s1">&#39;Genes&#39;</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="c1"># print irisweight_df.head(n=30L)</span>
+
+    <span class="k">if</span> <span class="n">out_type</span><span class="o">==</span><span class="s2">&quot;HDF5&quot;</span><span class="p">:</span>
+        <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/iris_human.h5&quot;</span>
+        <span class="n">irisweight_df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="make_iris_expr"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_iris_expr">[docs]</a><span class="k">def</span> <span class="nf">make_iris_expr</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the persistent files for IRIS.</span>
+<span class="sd">    Now we implement for HDF5 as Pandas table</span>
+<span class="sd">    and Pickle as nested dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cell_prop_file</span> <span class="o">=</span> <span class="s1">&#39;./proportion_data/IRIS.csv&#39;</span>
+    <span class="n">iris</span> <span class="o">=</span> <span class="n">cellprop</span><span class="o">.</span><span class="n">Iris</span><span class="p">(</span><span class="n">cell_prop_file</span><span class="p">)</span>
+    <span class="n">iris_expr_df</span>  <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">ComputeAverage</span><span class="p">()</span>
+    <span class="n">iris_expr_df</span>  <span class="o">=</span> <span class="n">iris_expr_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+    <span class="n">iris_expr_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;Probes&#39;</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">out_type</span><span class="o">==</span><span class="s2">&quot;HDF5&quot;</span><span class="p">:</span>
+        <span class="n">hdf_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/iris_human_expr.h5&quot;</span>
+        <span class="n">iris_expr_df</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">hdf_output</span><span class="p">,</span> <span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">complib</span><span class="o">=</span><span class="s1">&#39;zlib&#39;</span><span class="p">,</span><span class="n">complevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="make_immgen_specificity"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.make_immgen_specificity">[docs]</a><span class="k">def</span> <span class="nf">make_immgen_specificity</span><span class="p">(</span><span class="n">species</span><span class="o">=</span><span class="s1">&#39;mouse&#39;</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;sparseness&#39;</span><span class="p">,</span><span class="n">to_exclude</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;gdTCells&#39;</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make specificity file in HDF5.</span>
+<span class="sd">    The data structure is mouse.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cellpop_df</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">read_hdf_expr</span><span class="p">(</span><span class="n">species</span><span class="o">=</span><span class="n">species</span><span class="p">)</span>
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">cellpop_df</span>
+    <span class="k">if</span> <span class="n">to_exclude</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tcells_subset</span>   <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;abTcells&quot;</span><span class="p">,</span><span class="s2">&quot;gdTCells&quot;</span><span class="p">]</span>
+        <span class="n">mg_df</span><span class="p">[</span><span class="s1">&#39;Tcells&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mg_df</span><span class="p">[</span><span class="n">tcells_subset</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">mg_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">tcells_subset</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">col_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mg_df</span><span class="p">)</span>
+        <span class="c1"># swap last two columns</span>
+        <span class="n">col_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">col_list</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">col_list</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">col_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mg_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">col_list</span>
+        <span class="c1"># pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mg_df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">to_exclude</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+
+    <span class="c1"># Using circular package calling</span>
+    <span class="c1"># possibly harmful</span>
+    <span class="n">mg_df</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">assign_specificity_score</span><span class="p">(</span><span class="n">mg_df</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>    
+    <span class="c1"># Sort genes by specificity desending</span>
+    <span class="n">mg_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="n">mg_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">celltypes</span> <span class="o">=</span> <span class="n">colnames</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">outerdict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">mg_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">rdf</span> <span class="o">=</span>  <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="c1"># capture gene row</span>
+        <span class="n">genedf</span> <span class="o">=</span> <span class="n">rdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">&#39;records&#39;</span><span class="p">)</span>
+        <span class="n">genename</span> <span class="o">=</span> <span class="n">genedf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># remove gene row</span>
+        <span class="n">rdf</span> <span class="o">=</span> <span class="n">rdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="c1"># capture specificity score row</span>
+        <span class="n">score_df</span> <span class="o">=</span> <span class="n">rdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">&#39;records&#39;</span><span class="p">)</span>
+        <span class="n">score</span>    <span class="o">=</span> <span class="n">score_df</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># remove specificity score row</span>
+        <span class="n">rdf</span> <span class="o">=</span> <span class="n">rdf</span><span class="o">.</span><span class="n">ix</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">rdf_dict</span> <span class="o">=</span> <span class="n">rdf</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s1">&#39;dict&#39;</span><span class="p">)</span>
+        <span class="n">rdf_dict</span> <span class="o">=</span> <span class="n">rdf_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># pick cell type with highest expression</span>
+        <span class="n">sorted_rdf_dict</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rdf_dict</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> 
+        <span class="n">highest_ctexpr</span> <span class="o">=</span> <span class="n">sorted_rdf_dict</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">highct</span> <span class="o">=</span> <span class="n">highest_ctexpr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">outerdict</span><span class="p">[</span><span class="n">highct</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">genename</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="s2">&quot;(</span><span class="si">{:1.3f}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>  <span class="p">)</span>
+
+    <span class="n">to_include</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;gdTCells&#39;</span><span class="p">:</span><span class="s1">&#39;abTcells&#39;</span><span class="p">,</span> <span class="s1">&#39;abTcells&#39;</span><span class="p">:</span><span class="s1">&#39;gdTCells&#39;</span><span class="p">}</span>
+    
+    <span class="n">pickle_output</span> <span class="o">=</span> <span class="s2">&quot;./proportion_data/immgen_mouse_celltype_specificity_&quot;</span> <span class="o">+</span> <span class="n">to_include</span><span class="p">[</span><span class="n">to_exclude</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">+</span> <span class="s2">&quot;.pkl&quot;</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">pickle_output</span><span class="p">,</span><span class="s2">&quot;wb&quot;</span><span class="p">)</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">outerdict</span><span class="p">,</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">output</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+    
+
+        
+    
+    
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../icepop.html#icepop.serialize_cell_proportion.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Make the actual HDF files for both ImmGen and IRIS.&quot;&quot;&quot;</span>
+    <span class="c1"># make_iris_expr(out_type=&quot;HDF5&quot;)</span>
+    <span class="c1"># make_immgen_expr(out_type=&quot;HDF5&quot;,group_by=&quot;organ&quot;)</span>
+    <span class="c1"># make_immgen_expr_organ(out_type=&quot;HDF5&quot;,group_by=&quot;organ&quot;)</span>
+    <span class="c1"># make_immgen_expr_cpop_phendict(out_type=&quot;HDF5&quot;)</span>
+    <span class="c1"># make_immgen_expr_phenotype(out_type=&quot;HDF5&quot;)</span>
+    <span class="c1"># make_immgen_specificity(species=&#39;mouse&#39;)</span>
+
+    <span class="c1"># make_immgen_weight(out_type=&quot;HDF5&quot;)</span>
+    <span class="c1"># make_immgen_weight(out_type=&quot;HDF5&quot;,group_by=&quot;organ&quot;)</span>
+
+    <span class="n">make_iris_expr_phenotype</span><span class="p">(</span><span class="n">out_type</span><span class="o">=</span><span class="s2">&quot;HDF5&quot;</span><span class="p">)</span></div>
+    <span class="c1"># make_iris_expr_cpop_phendict(out_type=&quot;HDF5&quot;)</span>
+    <span class="c1"># make_iris(out_type=&quot;HDF5&quot;)</span>
+    <span class="c1"># make_immgen(out_type=&quot;pickle&quot;)</span>
+    
+    
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../static/logo.png" alt="Logo"/>
+            </a></p><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

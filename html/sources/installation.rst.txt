@@ -1,0 +1,47 @@
+Installing
+----------
+
+ICEPOP is best installed via `pip <https://pip.pypa.io/en/stable/>`_ through
+one of the following commands::
+
+    $ pip install git+https://github.com/ewijaya/icepop.git 
+    $ pip install git+https://github.com/ewijaya/icepop.git --upgrade
+    $ pip install git+git://github.com/ewijaya/icepop.git
+    $ pip install git+git://github.com/ewijaya/icepop.git --upgrade
+
+
+Dependencies
+------------
+
+In order for ICEPOP installation to succeed, you will need the following
+primary pieces of software:
+
+    * the Python programming language;
+    * the setuptools packaging/installation library.
+
+
+Python
+======
+ICEPOP requires `Python <http://www.python.org/>`_ version 2.7 or later. Some
+caveats and notes about other Python versions.
+
+* We are not planning to support **Python 2.4**
+  given its age and the number of useful tools that depends on  **Python 2.7** such as Pandas
+  and many other modules.
+* ICEPOP has not yet been tested on **Python 3.x** and is very likely to be
+  incompatible with that line of development. However, as much as we can,
+  we try to be forward-looking (e.g. using ``import __future__``). In the
+  future we plan to port to 3.x once our dependencies do.
+
+Source code checkouts
+=====================
+We manage the project's source code with `Git <https://github.com/>`_  DVCS. 
+To follow ICEPOP development via Git instead of downloading official releases,
+you can clone the canonical repository straight from ICEPOP's organization 
+repository on Github: ``git@github.com:ewijaya/icepop.git``.
+
+ActivePython and PyPM
+=====================
+ICEPOP is planned to be accessible for Windows users via ActiveState's
+`ActivePython <http://www.activestate.com/activepython/downloads>`_.
+

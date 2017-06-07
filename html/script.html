@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Cell population score (DEGs) &#8212; icepop 1 documentation</title>
+    
+    <link rel="stylesheet" href="static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="shortcut icon" href="static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="icepop package" href="icepop.html" />
+    <link rel="prev" title="Installing" href="installation.html" /> 
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new
+                Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+            ga('create', 'UA-71810904-1', 'auto');
+            ga('send', 'pageview');
+
+         </script>
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="cell-population-score-degs">
+<h1>Cell population score (DEGs)<a class="headerlink" href="#cell-population-score-degs" title="Permalink to this headline">¶</a></h1>
+<p>Calculate immune cell population score for differentially
+expressed genes.</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>$ ../../icepop/scripts/icepop_degs -h
+usage: icepop_degs [-h] [-s] [-g] [-cv_organ] [-o] [--gene_count] [--logscale]
+                   [--verbose] [-fclim FCLIM]
+                   [filename]
+
+Cell population score for differentially expressed genes.
+
+positional arguments:
+  filename        DEGs file in TSV, CSV or Excel format
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -s , -species   species (mouse, human)
+  -g , -organs    organs (&#39;no_pref&#39;,&#39;bone_marrow&#39;, etc)
+  -cv_organ       organs (&#39;no_pref&#39;,&#39;ln&#39;, &#39;lv&#39;,&#39;sp&#39;)
+  -o , -outfile   output file in stdout, JSON, PNG/JPG/SVG format
+  --gene_count    normalized score by gene_count
+  --logscale      perform log scale on FC or expression
+  --verbose       verbose output
+  -fclim FCLIM    specify single fold change threshold
+</pre></div>
+</div>
+<p>The input should be either in form of <a class="reference external" href="http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.csv">CSV</a>, <a class="reference external" href="http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.tsv">TSV</a> or <a class="reference external" href="http://sysimg.ifrec.osaka-u.ac.jp/icepop/static/files/input_type1_degs.xlsx">Excel</a> files.
+The results can be in the form of table or plot. They are determined by the
+suffix of the output file.</p>
+<p>To create plot:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.jpg
+</pre></div>
+</div>
+<p>The command will produce individual plots depending on the number of samples.
+To create table:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.tsv
+$ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.xlsx
+</pre></div>
+</div>
+<p>Suffixes of the output should either one of these: &#8216;svg&#8217;, &#8216;jpg&#8217;, &#8216;png&#8217;, &#8216;tsv&#8217;, &#8216;xlsx&#8217;, &#8216;xls&#8217;.</p>
+</div>
+<div class="section" id="circos-plot-for-unearthing-the-gene-features-in-immune-cells">
+<h1>Circos plot for unearthing the gene features in immune cells<a class="headerlink" href="#circos-plot-for-unearthing-the-gene-features-in-immune-cells" title="Permalink to this headline">¶</a></h1>
+<p>This script produces the circular plot that links feature
+genes among the samples.</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>$ ../../icepop/scripts/icepop_degs_circos_uniform -h
+usage: icepop_degs_circos_uniform [-h] [-s] [-g] [-cv_organ] [-p] [-c] [-o]
+                                  [-fclim FCLIM] [-circos_dir] [--gene_count]
+                                  [--logscale] [--go] [--verbose]
+                                  [filename]
+
+Cell population score for differentially expressed genes.
+
+positional arguments:
+  filename        DEGs file in TSV, CSV or Excel format
+
+optional arguments:
+  -h, --help      show this help message and exit
+  -s , -species   species (mouse, human)
+  -g , -organs    organs (&#39;no_pref&#39;,&#39;bone_marrow&#39;, etc)
+  -cv_organ       CV filter organs (&#39;no_pref&#39;,&#39;ln&#39;, &#39;lv&#39;,&#39;sp&#39;)
+  -p , -pvalue    p-value lower threshold
+  -c , -cormeth   correction method
+                  (HOLM_BONFERRONI,BENJAMINI_HOCHBERG,BONFERRONI)
+  -o , -outfile   output file in JSON format
+  -fclim FCLIM    specify single fold change threshold
+  -circos_dir     directory to store circos files, please use absolute path
+  --gene_count    normalized score by gene_count
+  --logscale      perform log scale on FC or expression
+  --go            perform GO (gene ontology) analysis for every cell type in
+                  sample
+  --verbose       verbose output
+</pre></div>
+</div>
+<p>It assumes that <a class="reference external" href="http://www.circos.ca/">Circos</a>  is already installed
+in your main path. Typical use looks like this in Bash script:</p>
+<div class="highlight-bash"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="nv">INFILE</span><span class="o">=</span>input_type1_degs.tsv
+<span class="nv">CIRCOS_DIR</span><span class="o">=</span>your_circos_dir
+<span class="nv">CIRCOS_CONF</span><span class="o">=</span>//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
+
+icepop_degs_circos_uniform <span class="nv">$INFILE</span> <span class="se">\</span>
+    --go <span class="se">\</span>
+    -fclim <span class="m">2</span> <span class="se">\</span>
+    -cv_organ sp <span class="se">\</span>
+    -circos_dir <span class="nv">$CIRCOS_DIR</span>
+
+<span class="nb">cd</span> <span class="nv">$CIRCOS_DIR</span>
+cp -r <span class="nv">$CIRCOS_CONF</span> .
+circos -param <span class="nv">random_string</span><span class="o">=</span><span class="s1">&#39;image&#39;</span> -conf ./etc/circos-medium.conf
+</pre></div>
+</td></tr></table></div>
+</div>
+<div class="section" id="gene-clustering-and-go-enrichment">
+<h1>Gene clustering and GO enrichment<a class="headerlink" href="#gene-clustering-and-go-enrichment" title="Permalink to this headline">¶</a></h1>
+<p>Given a differentially expressed genes, this script
+perform gene clustering and calculate gene ontology (GO) enrichment.</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>$ ../../icepop/scripts/go_degs_cluster -h
+usage: go_degs_cluster [-h] [-s] [-k] [-m] [-d] [-g] [-p] [-c] [-o] [--immune]
+                       [filename]
+
+GO enrichment for clustered DEGs.
+
+positional arguments:
+  filename         DEGs file in TSV, CSV or Excel format
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -s , -species    species (mouse, human)
+  -k               number of clusters
+  -m , -method     clustering method (complete, average, ward)
+  -d , -distance   distance measure (euclidean, manhattan, pearsond)
+  -g , -organs     organs (&#39;no_pref&#39;,&#39;bone_marrow&#39;, etc)
+  -p , -pvalue     p-value lower threshold
+  -c , -cormeth    correction method
+                   (HOLM_BONFERRONI,BENJAMINI_HOCHBERG,BONFERRONI)
+  -o , -outfile    output file in JSON format
+  --immune         only show immune GO terms
+</pre></div>
+</div>
+</div>
+<div class="section" id="cell-population-score-for-gene-clusters">
+<h1>Cell population score for gene clusters<a class="headerlink" href="#cell-population-score-for-gene-clusters" title="Permalink to this headline">¶</a></h1>
+<p>This script perform gene clustering and calculate
+cell population score for each cluster.</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>$ ../../icepop/scripts/icepop_degs_cluster -h
+usage: icepop_degs_cluster [-h] [-s] [-k] [-m] [-d] [-g] [-o] [--gene_count]
+                           [--logscale]
+                           [filename]
+
+Cell population score for clustered DEGs.
+
+positional arguments:
+  filename         DEGs file
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -s , -species    species (mouse, human)
+  -k               number of clusters
+  -m , -method     clustering method (complete, average, ward)
+  -d , -distance   distance measure (euclidean, manhattan, pearsond)
+  -g , -organs     organs (&#39;no_pref&#39;,&#39;bone_marrow&#39;, etc)
+  -o , -outfile    output file in JSON format
+  --gene_count     normalized score by gene_count
+  --logscale       perform log scale on FC or expression
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="static/logo.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Cell population score (DEGs)</a></li>
+<li><a class="reference internal" href="#circos-plot-for-unearthing-the-gene-features-in-immune-cells">Circos plot for unearthing the gene features in immune cells</a></li>
+<li><a class="reference internal" href="#gene-clustering-and-go-enrichment">Gene clustering and GO enrichment</a></li>
+<li><a class="reference internal" href="#cell-population-score-for-gene-clusters">Cell population score for gene clusters</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installing</a></li>
+      <li>Next: <a href="icepop.html" title="next chapter">icepop package</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script><hr />
+<p>
+<h2 class='logo'>
+<a href="https://vdynamics.shinyapps.io/icepop/">Web Version</a>
+</h2>
+</p><p>
+<h2 class='logo'>
+<a href="https://github.com/ewijaya/icepop">GitHub</a>
+</h2>
+</p>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Edward Wijaya.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
