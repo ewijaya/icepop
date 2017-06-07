@@ -28,7 +28,7 @@ one of the following commands::
 Alternative access 
 ------------------
 * Web application [[main](https://vdynamics.shinyapps.io/icepop/)][[mirror](https://ewijaya.shinyapps.io/icepop/)]
- 
+* [API documentation](http://ewijaya.github.io/icepop/html/index.html) 
 
 Calculating immune response score from DEGs
 -------------------------------------------
