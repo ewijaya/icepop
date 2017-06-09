@@ -68,10 +68,10 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2, y_thres=None):
 
     toplot_df = indf
     xlabels =  toplot_df.index.values
-    barplot   = toplot_df.plot(kind="bar", figsize=(17,17), \
+    barplot   = toplot_df.plot(kind="bar", figsize=(20,20), \
                           color = tableau10, \
                           width=0.7,\
-                          fontsize = 30,\
+                          fontsize = 50,\
                           legend=False,
                           ylim = (ymin,ymax),
                           subplots=False,
@@ -84,9 +84,10 @@ def bar_plot(indf, title=None,outfile=None, ymin=0, ymax=0.2, y_thres=None):
         plt.axhline(y=y_thres, linewidth=2.0, color='r',zorder=1)
         
     plt.xlabel("")
-    plt.ylabel("Score", fontsize=30, fontweight="bold")
+    plt.ylabel("ICEPOP Score", fontsize=50, fontweight="bold")
     fig = barplot.get_figure()
     fig.suptitle(title,fontsize=30,fontweight="bold")
+    fig.subplots_adjust(bottom=0.15)
     fig.savefig(outfile)
     plt.close()
     return
