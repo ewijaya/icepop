@@ -79,6 +79,6 @@ circos -param random_string='image' -conf ./etc/circos-medium.conf
 ```
 
 
-<img src="./images/circos-table-image-medium.jpg"  width="80%" height="80%" align="center"/>
+![](./images/circos-table-image-medium.jpg)
 
 
