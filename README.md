@@ -42,7 +42,7 @@ To create bar plot use this command:
 
 The command will produce individual plots depending on the number of samples.
 
-<img src="./images/output_barplot.jpg"  align="left"/>
+![](./images/output_barplot.jpg)
 
 
 To create table:
@@ -79,8 +79,7 @@ cp -r $CIRCOS_CONF .
 circos -param random_string='image' -conf ./etc/circos-medium.conf
 ```
 
-It will produce this image: 
 
-<img src="./images/circos-table-image-medium.jpg"  width="80%" height="80%" align="left"/>
+<img src="./images/circos-table-image-medium.jpg"  width="80%" height="80%" align="center"/>
 
 
