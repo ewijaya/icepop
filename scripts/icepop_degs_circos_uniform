@@ -20,7 +20,6 @@ from collections import defaultdict
 import os
 import pandas as pd
 # To be removed later
-sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
 sys.path.insert(0,'/Users/ewijaya/Various_projects/cellpopulation_framework/icepop')
 from icepop import input_reader as ir
 from icepop import cellpop_score as cp

@@ -40,6 +40,9 @@ To create plot::
 
     $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.jpg
 
+It will produces image like this:
+
+<img src="./images/output_barplot.jpg"  align="left"/>
 
 The command will produce individual plots depending on the number of samples.
 To create table::
