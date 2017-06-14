@@ -71,7 +71,6 @@ CIRCOS_CONF=//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
 icepop_degs_circos_uniform $INFILE \ 
     --go \
     -fclim 2 \
-    -cv_organ sp \
     -circos_dir $CIRCOS_DIR
 
 cd $CIRCOS_DIR
