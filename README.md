@@ -36,16 +36,16 @@ The input should be either in form of CSV or TSV files.
 The results can be in the form of table or plot. They are determined by the
 suffix of the output file.
 
-To create plot::
+To create bar plot use this command:
 
     $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.jpg
 
-It will produces image like this:
+The command will produce individual plots depending on the number of samples.
 
 <img src="./images/output_barplot.jpg"  align="left"/>
 
-The command will produce individual plots depending on the number of samples.
-To create table::
+
+To create table:
 
     $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.tsv
     $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.xlsx
@@ -75,5 +75,8 @@ in your main path. Typical use looks like this in Bash script:
     cp -r $CIRCOS_CONF .
     circos -param random_string='image' -conf ./etc/circos-medium.conf
 
+It will produce this image: 
+
+<img src="./images/circos-table-image-medium.jpg"  align="left"/>
 
 
