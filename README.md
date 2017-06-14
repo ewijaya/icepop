@@ -78,6 +78,6 @@ circos -param random_string='image' -conf ./etc/circos-medium.conf
 
 This script produces the circular plot that links feature genes among the samples.
 
-<img src="./images/circos-table-image-medium.png"  width="80%" height="80%" align="center"/>
+![]("./images/circos_plot.jpg")
 
 
