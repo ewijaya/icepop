@@ -47,8 +47,10 @@ The command will produce individual plots depending on the number of samples.
 
 To create table:
 
-    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.tsv
-    $ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.xlsx
+```
+$ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.tsv
+$ icepop_degs input_type1_degs.tsv -fclim 2 -s mouse -o output_file.xlsx
+```
 
 Suffixes of the output should either one of these: 'svg', 'jpg', 'png', 'tsv', 'xlsx', 'xls'.
 
@@ -61,22 +63,24 @@ It assumes that [Circos](http://www.circos.ca/)  is already installed
 in your main path. Typical use looks like this in Bash script:
 
 
-    INFILE=input_type1_degs.tsv
-    CIRCOS_DIR=your_circos_dir
-    CIRCOS_CONF=//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
+``` bash
+INFILE=input_type1_degs.tsv
+CIRCOS_DIR=your_circos_dir
+CIRCOS_CONF=//anaconda/lib/python2.7/site-packages/icepop/circos_conf/
 
-    icepop_degs_circos_uniform $INFILE \ 
-        --go \
-        -fclim 2 \
-        -cv_organ sp \
-        -circos_dir $CIRCOS_DIR
+icepop_degs_circos_uniform $INFILE \ 
+    --go \
+    -fclim 2 \
+    -cv_organ sp \
+    -circos_dir $CIRCOS_DIR
 
-    cd $CIRCOS_DIR
-    cp -r $CIRCOS_CONF .
-    circos -param random_string='image' -conf ./etc/circos-medium.conf
+cd $CIRCOS_DIR
+cp -r $CIRCOS_CONF .
+circos -param random_string='image' -conf ./etc/circos-medium.conf
+```
 
 It will produce this image: 
 
-<img src="./images/circos-table-image-medium.jpg"  align="left"/>
+<img src="./images/circos-table-image-medium.jpg"  width="80%" height="80%" align="left"/>
 
 
