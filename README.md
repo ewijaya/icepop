@@ -57,8 +57,6 @@ Suffixes of the output should either one of these: 'svg', 'jpg', 'png', 'tsv', '
 
 Circos plot for unearthing the gene features in immune cells
 ------------------------------------------------------------
-This script produces the circular plot that links feature
-genes among the samples.
 It assumes that [Circos](http://www.circos.ca/)  is already installed
 in your main path. Typical use looks like this in Bash script:
 
@@ -78,7 +76,8 @@ cp -r $CIRCOS_CONF .
 circos -param random_string='image' -conf ./etc/circos-medium.conf
 ```
 
+This script produces the circular plot that links feature genes among the samples.
 
-![](./images/circos-table-image-medium.jpg)
+<img src="./images/circos-table-image-medium.jpg"  width="80%" height="80%" align="center"/>
 
 
