@@ -2,8 +2,7 @@
 """ 
 
 Programmatic way to do GO analysis.
-It uses `TargetMine <http://targetmine.mizuguchilab.org/>`_.
-
+It uses `TargetMine <http://targetmine.mizuguchilab.org/>`_.  
 """
 __author__    = "Edward Wijaya <ewijaya@gmail.com>"
 __copyright__ = "Copyright 2014, The Cool Project"
