@@ -82,4 +82,5 @@ This script produces the circular plot that links feature genes among the sample
 
 Publication
 -----------
-E. Wijaya, Y. Igarashi, N. Nakatsu, Y. Haseda, J. Billaud, YA Chen, K. Mizuguchi, H. Yamada, K. Ishii, T. Aoshi. *Quantifying the relative immune cell activation from whole tissue/organ-derived differentially expressed gene data.* Sci Rep. 2017 Oct 9;7(1):12847 [PMID:28993694](https://www.ncbi.nlm.nih.gov/pubmed/28993694)
+E. Wijaya, Y. Igarashi, N. Nakatsu, Y. Haseda, J. Billaud, YA Chen, K.
+Mizuguchi, H. Yamada, K. Ishii, T. Aoshi. *Quantifying the relative immune cell activation from whole tissue/organ-derived differentially expressed gene data.* Sci Rep. 2017 Oct 9;7(1):12847. [PMID:28993694](https://www.ncbi.nlm.nih.gov/pubmed/28993694)
