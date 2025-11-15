@@ -43,7 +43,7 @@ class Iris:
         """
         Compute average for subset of each cell type.
         """
-        df = pd.io.parsers.read_csv(self.irisfn, sep=",", comment="#",\
+        df = pd.read_csv(self.irisfn, sep=",", comment="#",
                 skiprows=[2])
         colnames = df.columns.values.tolist()
         ncolnames = [x  for x in colnames if "DUMMY" in x]
@@ -51,8 +51,9 @@ class Iris:
 
         # Averaging here
         df_average = df.set_index(["Probes","Genes"])
-        df_average = df_average.groupby(lambda x: x.split(".")[0],
-                axis=1).mean()
+        # Optimized: Pre-compute column mapping instead of lambda
+        col_map = {col: col.split(".")[0] for col in df_average.columns}
+        df_average = df_average.groupby(col_map, axis=1).mean()
 
         return df_average
         
@@ -127,10 +128,10 @@ class ImmGen:
         """
         Group by organs. Then average for for every cell type.
         """
-        infile = self.immg_fn 
-        df = pd.io.parsers.read_csv(infile,header=None,index_col=[1,2],skiprows=[2],dtype='unicode').iloc[:,1:]
-        df.columns = pd.MultiIndex.from_arrays(df.ix[:2].values)
-        df = df.ix[2:].astype(float)
+        infile = self.immg_fn
+        df = pd.read_csv(infile,header=None,index_col=[1,2],skiprows=[2],dtype='unicode').iloc[:,1:]
+        df.columns = pd.MultiIndex.from_arrays(df.iloc[:2].values)
+        df = df.iloc[2:].astype(float)
         df.index.names = ['cell', 'organ']
         df = df.reset_index('organ', drop=True)
         result = df.groupby(level=[0, 1], axis=1).mean()
@@ -168,8 +169,8 @@ class ImmGen:
         """
         outerdict2 = defaultdict(dict)
         ctlist, outdict = self.GetGeneCelltypeDoList()
-        for gene,ctvals in outdict.iteritems():
-            for ct,vals in ctvals.iteritems():
+        for gene,ctvals in outdict.items():
+            for ct,vals in ctvals.items():
                 avg = "%.2f"  % (sum(vals)/len(vals))
                 outerdict2[gene][ct] = avg
 
@@ -194,14 +195,14 @@ class ImmGen:
         uctlist = list( set(celltypelist) )
         uctlist.sort()
 
-        sumdict = dict((k, sum(float(f) for f in v.values())) 
-                        for k, v in outdict2.iteritems())
+        sumdict = dict((k, sum(float(f) for f in v.values()))
+                        for k, v in outdict2.items())
 
         # Compute percentage
         outerdict3 = defaultdict(dict)
-        for gene,ctavg in outdict2.iteritems():
+        for gene,ctavg in outdict2.items():
             totavg = float(sumdict[gene])
-            for ct,avg in ctavg.iteritems():
+            for ct,avg in ctavg.items():
                 perc = "%.2f" % ((float(avg) / totavg) * 100)
                 outerdict3[gene][ct] = float(perc)
         return(outerdict3, uctlist) 
@@ -218,16 +219,16 @@ class ImmGen:
         uctlist = list( set(celltypelist) )
         uctlist.sort()
 
-        sumdict = dict((k, sum(float(f) for f in v.values())) 
-                        for k, v in outdict2.iteritems())
+        sumdict = dict((k, sum(float(f) for f in v.values()))
+                        for k, v in outdict2.items())
 
         # Compute percentage
         outerdict3 = defaultdict(list)
-        for gene,ctavg in outdict2.iteritems():
+        for gene,ctavg in outdict2.items():
             totavg = float(sumdict[gene])
-            
-            ctavg_sorted = sorted(ctavg.iteritems(), 
-                           key=lambda (x,y):float(y),reverse=True)
+
+            ctavg_sorted = sorted(ctavg.items(),
+                           key=lambda x: float(x[1]), reverse=True)
             for ct,avg in ctavg_sorted:
                 perc = ct + "(%.2f)" % ((float(avg) / totavg) * 100)
                 outerdict3[gene].append(perc)

@@ -47,10 +47,10 @@ def mix_color(ctype_color_dict):
     them by taking average of R, G, B value
     """
     outdict = {}
-    for ct1, rgb1 in ctype_color_dict.iteritems():
+    for ct1, rgb1 in ctype_color_dict.items():
         m = re.search('([\d+\,]+)',rgb1)
         rgb_1 = [int (x) for x in m.group(1).split(",")]
-        for ct2, rgb2 in ctype_color_dict.iteritems():
+        for ct2, rgb2 in ctype_color_dict.items():
                 
             m2 = re.search('([\d+\,]+)',rgb2)
             rgb_2 = [int (y) for y in m2.group(1).split(",")]
@@ -93,18 +93,17 @@ def get_sample_gene_list( genectype_df= None):
 
 
         indone = {}
-        for index, rowdf in idf.iterrows():
-            cellvaldict =  rowdf.to_dict()
-            # print index, gene
-            # print json.dumps(cellvaldict, indent=4)
+        # Optimized: Use itertuples() instead of iterrows() - 10-100x faster
+        for row in idf.itertuples(index=False):
+            cellvaldict = row._asdict()
             gene = cellvaldict["Genes"]
-            for cell,val in  cellvaldict.iteritems():
+            for cell,val in  cellvaldict.items():
                 if cell == "Genes": continue
-                    
+
                 if round(val,4) in topk_vals:
 
                     if gene + " " + cell in indone: continue
-                        
+
                     ngene = gene[0] +  gene[1:].lower()
                     # print gene, ngene
                     outerdict[sample][cell].append(ngene)

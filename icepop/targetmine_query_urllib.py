@@ -57,7 +57,7 @@ def get_tgm_data(genelist_string,species="mouse",\
     # username = "tmext"
     # password = "saito27x"
 
-    for theme,data_set in theme_dict.iteritems():
+    for theme,data_set in theme_dict.items():
         # mainurl = "http://"+ enrichment_url + "/enrich/analysis/enrichment"  
         mainurl = "http://"+ enrichment_url + "/pipeline/analysis/enrichment"  
 

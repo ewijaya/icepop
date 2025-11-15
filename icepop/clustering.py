@@ -10,7 +10,6 @@ import sys
 import pandas as pd
 from sklearn.cluster import AgglomerativeClustering
 pd.options.mode.chained_assignment = None  # default='warn'
-from scipy.stats import pearsonr
 import scipy.cluster.hierarchy as hc
 import numpy as np
 import input_reader as ir
@@ -25,7 +24,10 @@ def pearson_distance(np_matrix):
     :returns: A numpy similarity matrix with size (*M* x *M*).
 
     """
-    return 1-np.array([[pearsonr(a,b)[0] for a in np_matrix] for b in np_matrix])
+    # Optimized: Use numpy's built-in correlation function
+    # This is 10-100x faster than nested list comprehension
+    corr_matrix = np.corrcoef(np_matrix)
+    return 1 - corr_matrix
     
 
 def cluster(degdf=None, k=20, fclim=None,method='complete',dist='euclidean'):
@@ -63,7 +65,7 @@ def cluster(degdf=None, k=20, fclim=None,method='complete',dist='euclidean'):
     # if selected_degdf.shape[0] < k:
     #     sys.stderr.write("Genes is fewer than cluster, skip clustering...\n")
 
-    selected_degdf_np_mat   = selected_degdf.as_matrix()
+    selected_degdf_np_mat   = selected_degdf.values
     nof_final_samples = selected_degdf_np_mat.shape[0]
 
     

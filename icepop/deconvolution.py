@@ -77,7 +77,7 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
     A_df = merged_df[celltype_names]
 
     B = B_series
-    A = A_df.as_matrix()
+    A = A_df.values
 
     # print A
     # print B

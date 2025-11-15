@@ -28,8 +28,8 @@ def bind_sparseness_score(indf=None):
     """
 
     nindf = indf.copy()
-    genelist   = nindf.ix[:,0]
-    val_df  = nindf.ix[:,1:]
+    genelist   = nindf.iloc[:,0]
+    val_df  = nindf.iloc[:,1:]
     
     sparse_list = sparseness(val_df.values)
     nindf["sparseness_score"] = sparse_list
@@ -120,8 +120,8 @@ def assign_specificity_score(df, method='sparseness'):
 
     :returns: a Panda data frame with where every genes will have its specificity score.
     """
-    genelist = df.ix[:,0]
-    express_df   = df.ix[:,1:]
+    genelist = df.iloc[:,0]
+    express_df   = df.iloc[:,1:]
 
     # This is faster implementation than using 'apply'
     # The function is implemented on 2-D numpy array.
@@ -158,14 +158,14 @@ def find_topk_marker_genes(df, method='sparseness',to_exclude=None,lim=0.8,top_k
     mg_df = df.copy()
     # get top_k genes for every cell types
     all_sel_genes = []
-    for ct,topgenes in outerdict.iteritems():
+    for ct,topgenes in outerdict.items():
         sel_genes = topgenes[0:top_k] 
         sel_genes = [ x.split()[0] for x in sel_genes] 
         # print ct, ":",  ",".join(sel_genes) 
         all_sel_genes += sel_genes
         
     mg_df = mg_df[mg_df['Genes'].isin(all_sel_genes)]
-    tmp_marker_mat = mg_df.ix[:,1:-1].values
+    tmp_marker_mat = mg_df.iloc[:,1:-1].values
     condn          = LA.cond(tmp_marker_mat)
     mg_df.drop(to_exclude[0],axis=1,inplace=True)
     # print mg_df
@@ -200,7 +200,7 @@ def condn_thres_mat(df,method='sparseness',verbose=False):
     conds = np.empty((10,3))
     for i, splim in enumerate(np.arange(0,1,0.1)):
         marker_df_test = find_marker_genes(df,method=method, lim=splim)
-        tmp_marker_mat = marker_df_test.ix[:,1:].values
+        tmp_marker_mat = marker_df_test.iloc[:,1:].values
         condn          = LA.cond(tmp_marker_mat)
         nof_markers    = tmp_marker_mat.shape[0]
         conds[i,0] = splim

@@ -114,7 +114,7 @@ def enumerate_geneclust_go_output(cellpopdf, degdf, gene_count=False, \
         for clusterid, tdf in tmp_fcddf.groupby(['ClusterID']):
             genelist = tdf['gene'].tolist()
             # Make sure the list only contain string
-            genelist = filter(lambda x: isinstance(x, basestring), genelist)
+            genelist = list(filter(lambda x: isinstance(x, str), genelist))
             genelist_str =  ",".join(genelist)
             # print clusterid, genelist_str
             for vals in tgm.get_tgm_data(genelist_str,immune=immune, species=species, \
@@ -210,8 +210,8 @@ def enumerate_geneclust_output(cellpopdf, degdf, gene_count=False, \
         tmp_df.set_index("Cluster", drop=True, inplace=True)
         mdict = tmp_df.to_dict()
         tmp_list  = []
-        for celltype, clustval in mdict.iteritems():
-            for clustid, val in clustval.iteritems():
+        for celltype, clustval in mdict.items():
+            for clustid, val in clustval.items():
                 xy_name = celltype + ";" + str(clustid)
                 tmp_list.append({'celltype;clustid':xy_name, 'value':{'zscore':val}})
         lod.append({'threshold':fc_lim, 'heatdata':tmp_list})
@@ -258,7 +258,7 @@ def enumerate_output(cellpopdf, degdf, gene_count=False, \
                             gene_count=gene_count, logscale=logscale)
         mdict = cpop_score_df.to_dict()
         outlist = []
-        for sample, cellpopvals in mdict.iteritems():
+        for sample, cellpopvals in mdict.items():
             celltypelist            = []
             nof_genes               = nof_genes_dict[sample]
             celltype_response_thres = float(celltype_response_dict[sample])
@@ -271,7 +271,7 @@ def enumerate_output(cellpopdf, degdf, gene_count=False, \
 
             # sort by cell types
             od = collections.OrderedDict(sorted(cellpopvals.items()))
-            for celltype, val in od.iteritems():
+            for celltype, val in od.items():
                 celltypelist.append({"celltype":celltype,"score":val})
             outlist.append({
                             "values":celltypelist, 
