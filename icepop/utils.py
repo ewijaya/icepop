@@ -111,5 +111,4 @@ def get_sample_gene_list( genectype_df= None):
     
     return outerdict
 
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory

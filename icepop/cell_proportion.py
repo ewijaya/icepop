@@ -244,19 +244,4 @@ class ImmGen:
                 outerdict3[gene].append(perc)
         return(outerdict3, uctlist) 
 
-def main(igfile):
-    """Use for testing this file.
-
-    :param igfile: text file, cell population proportion.
-
-    To test this code:: 
-
-        python cell_proportion.py 
-    """
-    ig = ImmGen(igfile)
-    od3 = ig.ComputePercentageWeight()
-    # print json.dumps(od3, indent=4)
-
-if __name__ == '__main__':
-    immgen_file = 'proportion_data/ImmgenCons_all_celltypes_MicroarrayExp.csv'
-    main(immgen_file)
+# Test code moved to tests/ directory

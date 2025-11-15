@@ -11,6 +11,7 @@ __copyright__ = "Copyright 2015"
 from collections import defaultdict
 import json
 import pandas as pd
+from . import constants as const
 
 def average_expression(phendict=None,cpop_phen_exp_df=None, ctype_phen_df=None,by=None):
     """
@@ -90,11 +91,11 @@ def correlation(userinput_df=None, cpop_phen_exp_df=None, ctype_phen_df=None, me
         all_neg = all(x <0 for x in corr_vals)
 
         if all_neg:
-            # Pick top 10
-            corr_df = corr_df.head(n=10)
+            # Pick top phenotypes
+            corr_df = corr_df.head(n=const.DEFAULT_TOP_PHENOTYPES)
         else:
             # Choose positive correlation
-            # corr_df = corr_df.head(n=100) # version 3
+            # corr_df = corr_df.head(n=const.DEFAULT_TOP_PHENOTYPES_V3) # version 3
             corr_df = corr_df[corr_df[sample] > 0] # version 2
 
         corr_df.index.name = "phenotype"
@@ -110,5 +111,4 @@ def correlation(userinput_df=None, cpop_phen_exp_df=None, ctype_phen_df=None, me
     return outerdict, merged_df
     
 
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory

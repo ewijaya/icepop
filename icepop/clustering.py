@@ -98,15 +98,5 @@ def cluster(degdf=None, k=20, fclim=None,method='complete',dist='euclidean'):
         yield clustid, degdf_clust
 
 
-def main():
-    """
-    Used for testing this file.
-    """
-    deg_infile    = "../testing/input_type1_degs.large.tsv"
-    indf          = ir.read_file(deg_infile, mode="DEG") 
-    cluster(degdf=indf, fclim = 2, method='ward',dist='euclidean')
-    
-
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory
 

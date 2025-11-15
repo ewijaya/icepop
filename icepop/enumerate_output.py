@@ -292,27 +292,4 @@ def enumerate_output(cellpopdf, degdf, gene_count=False, \
             json.dump(final, jsonout, indent=4)
     return
 
-def main():
-    """
-    Used for testing this file.
-    """
-    deg_infile    = "../../testing/degs_based_analysis/dataset/Yoshioka_foldchange.tsv"
-    # deg_infile    = "../testing/degs_based_analysis/input_type1_degs.tsv"
-    cellpop_df    = scp.get_prop(species="mouse",mode="pandas_df")
-    indf          = ir.read_file(deg_infile, mode="DEG") 
-    foldchange_range =[2,2.5,3,3.5,4,4.5,5]
-    out_json = "../../testing/degs_based_analysis/output_type1_degs.json"
-    # out_json = "../../testing/degs_based_analysis/output_type1_degs.gc.json"
-    enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
-            outfilename = out_json,  gene_count=False, logscale=True)
-
-    # enumerate_geneclust_go_output(cellpop_df, indf, gene_count=False, \
-    #         outfilename=out_json, k=40, logscale=None,\
-    #         fc_range=foldchange_range,\
-    #         method="ward", dist="euclidean",\
-    #         species="mouse",pvalim=1,cormeth=None,immune=True,verbose=True)
-
-    
-
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory

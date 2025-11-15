@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import nnls
 from scipy.optimize import minimize
+from . import constants as const
 
 
 def normalize_data(A, B, method='v3'):
@@ -41,7 +42,7 @@ def normalize_data(A, B, method='v3'):
         raise ValueError(f"Unknown normalization method: {method}")
 
 
-def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None,norm_method='v3'):
+def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None,norm_method=None):
     """
     Perform deconvolution of raw expression data based on non-negative least-squares.
 
@@ -76,11 +77,15 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None,norm_method='v
     :param mixedexp_df: Pandas data frame of gene expression of single sample (:math:`B`).
     :param cellpop_df:  Pandas dataframe from ImmGen/IRIS cellpopulation (:math:`A`).
     :param method: string ('nnls','sqlsp')
-    :param norm_method: string ('v1','v2','v3','v4') normalization method. Default 'v3'.
+    :param norm_method: string ('v1','v2','v3','v4') normalization method. Default from constants.
 
     :returns: a dictionary with deconvolved weight for every
               cell types (:math:`x`).
     """
+    # Set default normalization method from constants
+    if norm_method is None:
+        norm_method = const.DEFAULT_NORMALIZATION_METHOD
+
     mixedexp_df = mixedexp_df.copy()
     cellpop_df = cellpop_df.copy()
     colnames = mixedexp_df.columns.values.tolist()
@@ -163,7 +168,7 @@ def by_nnls(A=None, B=None):
     # B = np.hstack([B,1.0])
 
     # Tikhonov regularization
-    lamb = 0.5
+    lamb = const.TIKHONOV_LAMBDA
     n_variables = A.shape[1]
     A = np.concatenate([A, np.sqrt(lamb)*np.eye(n_variables)])
     B = np.concatenate([B, np.zeros(n_variables)])

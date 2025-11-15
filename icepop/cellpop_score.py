@@ -13,6 +13,7 @@ from collections import defaultdict
 import pandas as pd
 import species_cell_proportion as scp
 import input_reader as ir
+from . import constants as const
 
 
 def _process_sample(cellpopdf, sample_df, sample, fclim, logscale, gene_count):
@@ -95,7 +96,7 @@ def deg_cellpopscore_generank(cellpopdf=None, degdf=None, fclim=None, gene_count
         cellpop_score_series = get_population_values(cellpop_df = cellpopdf,\
                                              sample_df  = sample_df,\
                                              input_gene_count = gene_count)
-        cellpop_score_series_round = cellpop_score_series.round(decimals=5)
+        cellpop_score_series_round = cellpop_score_series.round(decimals=const.CELLPOP_SCORE_DECIMALS)
 
         # Calculate median here.
         # The threshold is Median + Stdev(Median[idx-1],Median[idx],Median[idx+1])
@@ -169,7 +170,7 @@ def find_threshold(score_list,method=None):
     score_thres             = score_median + score_median_std
 
     # Quartile based
-    score_1quartile         = np.percentile(score_list, 25, axis=0)
+    score_1quartile         = np.percentile(score_list, const.FIRST_QUARTILE_PERCENTILE, axis=0)
     idx_low_q               = (np.abs(np.array(score_list)-score_1quartile)).argmin()
     # idx_high_q              = idx_low_q  + 1
     # print score_list
@@ -186,11 +187,11 @@ def find_threshold(score_list,method=None):
 
 
     if method == 'median':
-        return np.round(score_thres,decimals=5)
+        return np.round(score_thres, decimals=const.CELLPOP_SCORE_DECIMALS)
     elif method == 'q1':
-        return np.round(score_thres_q,decimals=5)
+        return np.round(score_thres_q, decimals=const.CELLPOP_SCORE_DECIMALS)
     elif method == 'q1std':
-        return np.round(score_thres_q - score_1quartile_std,decimals=5)
+        return np.round(score_thres_q - score_1quartile_std, decimals=const.CELLPOP_SCORE_DECIMALS)
     elif method == 'uniform':
         return (1/(len(score_list)+0.00)) 
 
@@ -256,7 +257,7 @@ def deg_cellpopscore_df(cellpopdf=None, degdf=None, fclim=None, gene_count=False
         celltype_response_thres = "{:.3f}".format(celltype_response_thres)
 
         if sample_response_val == '-inf' or sample_response_val == 'inf':
-            sample_response_val = 999
+            sample_response_val = const.INFINITY_REPLACEMENT
 
         sample_response_dict[sample] = sample_response_val
         celltype_response_dict[sample] = celltype_response_thres
@@ -411,17 +412,4 @@ def get_population_values(cellpop_df=None, sample_df=None, input_gene_count=None
     # print cellpop_perc.sum()
     return cellpop_perc
 
-def main():
-    """Used for testing this file. """ 
-    cellpop_df = scp.get_prop(species="mouse",mode="pandas_df") 
-    deg_inputfile="../testing/degs_based_analysis/input_type1_degs.tsv"
-    indf = ir.read_file(deg_inputfile, mode="DEG")
-    # print indf.head()
-    nof_genesdict, cpop_score_df = deg_cellpopscore_df(cellpopdf=cellpop_df, degdf=indf, fclim=1.5, gene_count=False, \
-            logscale=False)
-    # print json.dumps(nof_genesdict, indent=4)
-    # print cpop_score_df.head()
-
-
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory

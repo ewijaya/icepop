@@ -15,6 +15,7 @@ from collections import defaultdict
 from numpy import linalg as LA
 import pandas as pd
 import input_reader as ir
+from . import constants as const
 
 
 def bind_sparseness_score(indf=None):
@@ -138,7 +139,7 @@ def assign_specificity_score(df, method='sparseness'):
     return mg_df
     
 
-def find_topk_marker_genes(df, method='sparseness',to_exclude=None,lim=0.8,top_k=1):
+def find_topk_marker_genes(df, method='sparseness',to_exclude=None,lim=None,top_k=None):
     """
     Find marker genes from expression cell population by
     some specificity score. Then select to 10 genes, 
@@ -152,9 +153,15 @@ def find_topk_marker_genes(df, method='sparseness',to_exclude=None,lim=0.8,top_k
 
     :returns: a Panda data frame with selected marker genes.
     """
+    # Set defaults from constants
+    if lim is None:
+        lim = const.DEFAULT_SPECIFICITY_LIMIT
+    if top_k is None:
+        top_k = const.DEFAULT_TOP_K_GENES
+
     outerdict = ir.read_specificity_pickle()
-     
-     
+
+
     mg_df = df.copy()
     # get top_k genes for every cell types
     all_sel_genes = []
@@ -173,16 +180,20 @@ def find_topk_marker_genes(df, method='sparseness',to_exclude=None,lim=0.8,top_k
     return mg_df
     
 
-def find_marker_genes(df, method="sparseness", lim=0.8):
+def find_marker_genes(df, method="sparseness", lim=None):
     """
     Find marker genes from expression cell population by
     some specificity score.
 
     :param df: Pandas data frame, generally proportion file.
     :param method: str("sparseness","js")
-    :param lim:  float, threshold to select 
-    
+    :param lim:  float, threshold to select (default from constants)
+
     """
+    # Set default from constants
+    if lim is None:
+        lim = const.DEFAULT_SPECIFICITY_LIMIT
+
     mg_df = assign_specificity_score(df,method=method)    
     mg_df = mg_df.loc[mg_df[method] >= lim]
     mg_df.drop(method,axis=1,inplace=True)
@@ -197,8 +208,8 @@ def condn_thres_mat(df,method='sparseness',verbose=False):
     :returns: numpy (3 x 2) matrix, which stores list of threshold, condition \
         number and number of markers.
     """
-    conds = np.empty((10,3))
-    for i, splim in enumerate(np.arange(0,1,0.1)):
+    conds = np.empty((const.SPECIFICITY_THRESHOLD_STEPS, 3))
+    for i, splim in enumerate(np.arange(0, 1, 1.0/const.SPECIFICITY_THRESHOLD_STEPS)):
         marker_df_test = find_marker_genes(df,method=method, lim=splim)
         tmp_marker_mat = marker_df_test.iloc[:,1:].values
         condn          = LA.cond(tmp_marker_mat)
@@ -239,5 +250,4 @@ def find_best_marker_genes(df, method="sparseness",verbose=False):
     return find_marker_genes(df,method=method, lim=min_lim)
     
 
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory
