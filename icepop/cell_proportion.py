@@ -177,10 +177,27 @@ class ImmGen:
 
         return(outerdict2, ctlist)
 
+    def _compute_sum_dict(self, outdict2):
+        """
+        Helper: Compute sum of values for each gene across all cell types.
+        Extracted to reduce duplication.
+        """
+        return dict((k, sum(float(f) for f in v.values()))
+                    for k, v in outdict2.items())
+
+    def _get_unique_sorted_celltypes(self, celltypelist):
+        """
+        Helper: Get unique sorted cell type list.
+        Extracted to reduce duplication.
+        """
+        uctlist = list(set(celltypelist))
+        uctlist.sort()
+        return uctlist
+
     def ComputePercentageWeight(self):
         """
         After we obtain the average of cell types' gene expression,
-        here given a gene, we compute the weight of each gene 
+        here given a gene, we compute the weight of each gene
         in their respective cell type. Let :math:`e_{ij}` be the expression
         of gene :math:`i` in cell type :math:`j`.
         The cell type weight for every gene is computed as follows:
@@ -192,11 +209,8 @@ class ImmGen:
         """
         # Sum up value for each gene for all cell type
         outdict2, celltypelist = self.ComputeAverage()
-        uctlist = list( set(celltypelist) )
-        uctlist.sort()
-
-        sumdict = dict((k, sum(float(f) for f in v.values()))
-                        for k, v in outdict2.items())
+        uctlist = self._get_unique_sorted_celltypes(celltypelist)
+        sumdict = self._compute_sum_dict(outdict2)
 
         # Compute percentage
         outerdict3 = defaultdict(dict)
@@ -205,7 +219,7 @@ class ImmGen:
             for ct,avg in ctavg.items():
                 perc = "%.2f" % ((float(avg) / totavg) * 100)
                 outerdict3[gene][ct] = float(perc)
-        return(outerdict3, uctlist) 
+        return(outerdict3, uctlist)
 
     def ComputePercentageWeightBracket(self):
         """
@@ -216,17 +230,13 @@ class ImmGen:
         """
         # Sum up value for each gene for all cell type
         outdict2, celltypelist = self.ComputeAverage()
-        uctlist = list( set(celltypelist) )
-        uctlist.sort()
-
-        sumdict = dict((k, sum(float(f) for f in v.values()))
-                        for k, v in outdict2.items())
+        uctlist = self._get_unique_sorted_celltypes(celltypelist)
+        sumdict = self._compute_sum_dict(outdict2)
 
         # Compute percentage
         outerdict3 = defaultdict(list)
         for gene,ctavg in outdict2.items():
             totavg = float(sumdict[gene])
-
             ctavg_sorted = sorted(ctavg.items(),
                            key=lambda x: float(x[1]), reverse=True)
             for ct,avg in ctavg_sorted:
