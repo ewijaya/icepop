@@ -68,7 +68,7 @@ def iterate(handle=None, type="gsm",anncol="Gene Symbol"):
     """
     if type=="gsm":
         gpl = get_gpl(handle=handle)
-        for gsm_name, gsm in handle.gsms.iteritems():
+        for gsm_name, gsm in handle.gsms.items():
             # yield gsm_name, gsm
             annotation_column = anncol
             outdf = gsm.annotate(gpl, annotation_column)
@@ -104,7 +104,7 @@ def accumulate(handle=None, type="gsm",anncol="Gene Symbol",gpl_id=None):
         # print gpl.show_columns
         all_dfs = []
         annotation_column = anncol
-        for gsm_name, gsm in handle.gsms.iteritems():
+        for gsm_name, gsm in handle.gsms.items():
             # yield gsm_name, gsm
             outdf = gsm.annotate(gpl, annotation_column)
             outdf = outdf[["ID_REF",annotation_column, "VALUE"]]

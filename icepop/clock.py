@@ -19,11 +19,12 @@ def clockit(func):
     :param func: A function.
     """
     def wrapper(*arg, **kw):
-        t0 = time.clock()
+        # Updated to use perf_counter (Python 3.3+) instead of deprecated clock()
+        t0 = time.perf_counter()
         res = func(*arg, **kw)
-        t1 = time.clock()
+        t1 = time.perf_counter()
         total_time = t1 - t0
-        print "Time %s : %2.4f " % (func.__name__, total_time)
+        print("Time %s : %2.4f " % (func.__name__, total_time))
         return res
     
     return wrapper

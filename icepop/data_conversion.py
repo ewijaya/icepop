@@ -20,7 +20,7 @@ def df_to_dol(df):
     s = df.to_json(orient='columns')
     sdict = json.loads(s)
     alldict =[]
-    for k,v in sdict.iteritems():
+    for k,v in sdict.items():
         sampledict = {}
         sampledict['sample'] = k
         sampledict['pies_pct'] = []
@@ -28,7 +28,7 @@ def df_to_dol(df):
 
         # sort by cell types
         od = collections.OrderedDict(sorted(v.items()))
-        for ct, pct in od.iteritems():
+        for ct, pct in od.items():
             tmpdict = {}
             tmpdict['score'] = pct
             tmpdict['celltype'] = ct

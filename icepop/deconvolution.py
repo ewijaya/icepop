@@ -10,8 +10,39 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import nnls
 from scipy.optimize import minimize
+from . import constants as const
 
-def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
+
+def normalize_data(A, B, method='v3'):
+    """
+    Normalize matrices A and B using various methods.
+    Refactored from inline code to improve maintainability.
+
+    :param A: Matrix A (cell type proportion from ImmGen/IRIS)
+    :param B: Vector B (mixed sample expression)
+    :param method: Normalization method ('v1', 'v2', 'v3', 'v4')
+    :returns: Tuple of (normalized_A, normalized_B)
+    """
+    if method == 'v1':
+        # Normalize by maximum value across both A and B
+        max_val = max(A.max(axis=0).max(), B.max())
+        return A / max_val, B / max_val
+    elif method == 'v2':
+        # Normalize by sum
+        return A / A.sum(axis=0), B / B.sum()
+    elif method == 'v3':
+        # Normalize by maximum (Best performing method)
+        return A / A.max(axis=0), B / B.max()
+    elif method == 'v4':
+        # Normalize rows then columns (Better than V3 in some cases)
+        new_A = A / A.sum(axis=1)[:, None]  # normalize row
+        new_A = new_A / new_A.sum(axis=0)   # normalize column
+        return new_A, B / B.sum()
+    else:
+        raise ValueError(f"Unknown normalization method: {method}")
+
+
+def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None,norm_method=None):
     """
     Perform deconvolution of raw expression data based on non-negative least-squares.
 
@@ -46,10 +77,15 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
     :param mixedexp_df: Pandas data frame of gene expression of single sample (:math:`B`).
     :param cellpop_df:  Pandas dataframe from ImmGen/IRIS cellpopulation (:math:`A`).
     :param method: string ('nnls','sqlsp')
-    
+    :param norm_method: string ('v1','v2','v3','v4') normalization method. Default from constants.
+
     :returns: a dictionary with deconvolved weight for every
               cell types (:math:`x`).
     """
+    # Set default normalization method from constants
+    if norm_method is None:
+        norm_method = const.DEFAULT_NORMALIZATION_METHOD
+
     mixedexp_df = mixedexp_df.copy()
     cellpop_df = cellpop_df.copy()
     colnames = mixedexp_df.columns.values.tolist()
@@ -77,34 +113,14 @@ def deconvolve_expr(mixedexp_df=None, cellpop_df=None,method=None):
     A_df = merged_df[celltype_names]
 
     B = B_series
-    A = A_df.as_matrix()
+    A = A_df.values
 
     # print A
     # print B
 
-    # Normalize the data so that  they are comparable
-    # Very important, but still need to explore
-    # which way is the best to scale it.
-
-    # Norm V1
-    # max_val = max(A.max(axis=0).max(), B.max())
-    # A = A/max_val
-    # B = B/max_val
-
-    # Norm V2
-    # A = A/A.sum(axis=0)
-    # B = B/B.sum()
-
-    # Norm V3 (Best)
-    A = A/A.max(axis=0)
-    B = B/B.max()
-
-    # # Norm V4 (Looks better than V3)
-    # # normalize row
-    # new_A = A/A.sum(axis=1)[:,None]
-    # # normalize column 
-    # A = new_A/new_A.sum(axis=0)
-    # B = B/B.sum()
+    # Normalize the data so that they are comparable
+    # Uses configurable normalization method (default: v3 - best performing)
+    A, B = normalize_data(A, B, method=norm_method)
 
 
     if method == "sqlsp":
@@ -152,7 +168,7 @@ def by_nnls(A=None, B=None):
     # B = np.hstack([B,1.0])
 
     # Tikhonov regularization
-    lamb = 0.5
+    lamb = const.TIKHONOV_LAMBDA
     n_variables = A.shape[1]
     A = np.concatenate([A, np.sqrt(lamb)*np.eye(n_variables)])
     B = np.concatenate([B, np.zeros(n_variables)])

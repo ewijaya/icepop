@@ -13,6 +13,34 @@ from collections import defaultdict
 import pandas as pd
 import species_cell_proportion as scp
 import input_reader as ir
+from . import constants as const
+
+
+def _process_sample(cellpopdf, sample_df, sample, fclim, logscale, gene_count):
+    """
+    Helper function to process a single sample.
+    Extracted to reduce code duplication between deg_cellpopscore_generank and deg_cellpopscore_df.
+
+    :param cellpopdf: Cell population DataFrame
+    :param sample_df: Sample DataFrame with fold change data
+    :param sample: Sample name
+    :param fclim: Fold change limit
+    :param logscale: Whether to use log scale
+    :param gene_count: Whether to use gene count normalization
+    :returns: Filtered sample DataFrame and number of genes
+    """
+    sample_df = sample_df[[sample_df.columns[0], sample]]
+    sample_df = sample_df[sample_df[sample] >= fclim]
+    sample_df[sample_df.columns[0]] = sample_df[sample_df.columns[0]].str.strip()
+    nof_genes = sample_df.shape[0]
+
+    # Prune out sample with FC < 0 if logscale
+    if logscale:
+        sample_df = sample_df[sample_df[sample] > 0]
+        sample_df[sample] = np.log(sample_df[sample])
+
+    return sample_df, nof_genes
+
 
 def deg_cellpopscore_generank(cellpopdf=None, degdf=None, fclim=None, gene_count=False, logscale=False,
         cpop_thres='median'):
@@ -55,27 +83,20 @@ def deg_cellpopscore_generank(cellpopdf=None, degdf=None, fclim=None, gene_count
     threshold_dict = {}
     
     for i, sample in enumerate(sample_names):
-        unwanted_samples = list(set(sample_names) - set([sample]))
+        # Optimized: Use list comprehension instead of set operations
+        unwanted_samples = [s for s in sample_names if s != sample]
         sample_df = degdf[degdf.columns.difference(unwanted_samples)]
         sample_df = sample_df[["probe","Genes", sample]]
-        # Standardized the colum name so that
-        # it can be fitted with cellpopdf
-        # sample_df.columns = ["probe","Genes", sample]
+        # Standardized the column name so that it can be fitted with cellpopdf
         sample_df = sample_df[["Genes", sample]]
 
-        sample_df = sample_df[ sample_df[sample] >=  fclim ]
-        sample_df["Genes"] = sample_df["Genes"].str.strip()
-        nof_genes =  sample_df.shape[0]
-
-        # prune out sample with FC < 0 
-        if logscale:
-            sample_df = sample_df[ sample_df[sample] > 0 ]
-            sample_df[sample] = np.log(sample_df[sample])
+        # Use helper function to process sample
+        sample_df, nof_genes = _process_sample(cellpopdf, sample_df, sample, fclim, logscale, gene_count)
 
         cellpop_score_series = get_population_values(cellpop_df = cellpopdf,\
                                              sample_df  = sample_df,\
                                              input_gene_count = gene_count)
-        cellpop_score_series_round = cellpop_score_series.round(decimals=5)
+        cellpop_score_series_round = cellpop_score_series.round(decimals=const.CELLPOP_SCORE_DECIMALS)
 
         # Calculate median here.
         # The threshold is Median + Stdev(Median[idx-1],Median[idx],Median[idx+1])
@@ -149,7 +170,7 @@ def find_threshold(score_list,method=None):
     score_thres             = score_median + score_median_std
 
     # Quartile based
-    score_1quartile         = np.percentile(score_list, 25, axis=0)
+    score_1quartile         = np.percentile(score_list, const.FIRST_QUARTILE_PERCENTILE, axis=0)
     idx_low_q               = (np.abs(np.array(score_list)-score_1quartile)).argmin()
     # idx_high_q              = idx_low_q  + 1
     # print score_list
@@ -166,11 +187,11 @@ def find_threshold(score_list,method=None):
 
 
     if method == 'median':
-        return np.round(score_thres,decimals=5)
+        return np.round(score_thres, decimals=const.CELLPOP_SCORE_DECIMALS)
     elif method == 'q1':
-        return np.round(score_thres_q,decimals=5)
+        return np.round(score_thres_q, decimals=const.CELLPOP_SCORE_DECIMALS)
     elif method == 'q1std':
-        return np.round(score_thres_q - score_1quartile_std,decimals=5)
+        return np.round(score_thres_q - score_1quartile_std, decimals=const.CELLPOP_SCORE_DECIMALS)
     elif method == 'uniform':
         return (1/(len(score_list)+0.00)) 
 
@@ -212,25 +233,16 @@ def deg_cellpopscore_df(cellpopdf=None, degdf=None, fclim=None, gene_count=False
     sample_response_dict    = {}
     celltype_response_dict  = {}
     for i, sample in enumerate(sample_names):
-        unwanted_samples = list(set(sample_names) - set([sample]))
+        # Optimized: Use list comprehension instead of set operations
+        unwanted_samples = [s for s in sample_names if s != sample]
         sample_df = degdf[degdf.columns.difference(unwanted_samples)]
         sample_df = sample_df[["probe","Genes", sample]]
-        # Standardized the colum name so that
-        # it can be fitted with cellpopdf
-        # sample_df.columns = ["probe","Genes", sample]
+        # Standardized the column name so that it can be fitted with cellpopdf
         sample_df = sample_df[["Genes", sample]]
 
-        
-        sample_df = sample_df[ sample_df[sample] >=  fclim ]
-        # print sample_df.head()
-        sample_df["Genes"] = sample_df["Genes"].str.strip()
-        nof_genes =  sample_df.shape[0]
+        # Use helper function to process sample
+        sample_df, nof_genes = _process_sample(cellpopdf, sample_df, sample, fclim, logscale, gene_count)
         nof_genes_dict[sample] = nof_genes
-
-        # prune out sample with FC < 0 
-        if logscale:
-            sample_df = sample_df[ sample_df[sample] > 0 ]
-            sample_df[sample] = np.log(sample_df[sample])
 
         # print cellpopdf.head()
         cellpop_score_series = get_population_values(cellpop_df = cellpopdf,\
@@ -245,7 +257,7 @@ def deg_cellpopscore_df(cellpopdf=None, degdf=None, fclim=None, gene_count=False
         celltype_response_thres = "{:.3f}".format(celltype_response_thres)
 
         if sample_response_val == '-inf' or sample_response_val == 'inf':
-            sample_response_val = 999
+            sample_response_val = const.INFINITY_REPLACEMENT
 
         sample_response_dict[sample] = sample_response_val
         celltype_response_dict[sample] = celltype_response_thres
@@ -375,8 +387,8 @@ def get_population_values(cellpop_df=None, sample_df=None, input_gene_count=None
 
     # Multiple each cell type with fold change
     # Replace NaN and Inf with 0 (must check correctness)
-    multp_df = merged_df[celltypes].multiply(merged_df[sample_name],axis="index").fillna(0)
-    multp_df = multp_df.replace(np.inf,0)
+    # Optimized: Combine replace operations
+    multp_df = merged_df[celltypes].multiply(merged_df[sample_name],axis="index").replace([np.nan, np.inf], 0)
     # print multp_df
     
 
@@ -400,17 +412,4 @@ def get_population_values(cellpop_df=None, sample_df=None, input_gene_count=None
     # print cellpop_perc.sum()
     return cellpop_perc
 
-def main():
-    """Used for testing this file. """ 
-    cellpop_df = scp.get_prop(species="mouse",mode="pandas_df") 
-    deg_inputfile="../testing/degs_based_analysis/input_type1_degs.tsv"
-    indf = ir.read_file(deg_inputfile, mode="DEG")
-    # print indf.head()
-    nof_genesdict, cpop_score_df = deg_cellpopscore_df(cellpopdf=cellpop_df, degdf=indf, fclim=1.5, gene_count=False, \
-            logscale=False)
-    # print json.dumps(nof_genesdict, indent=4)
-    # print cpop_score_df.head()
-
-
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory

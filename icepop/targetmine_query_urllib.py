@@ -57,7 +57,7 @@ def get_tgm_data(genelist_string,species="mouse",\
     # username = "tmext"
     # password = "saito27x"
 
-    for theme,data_set in theme_dict.iteritems():
+    for theme,data_set in theme_dict.items():
         # mainurl = "http://"+ enrichment_url + "/enrich/analysis/enrichment"  
         mainurl = "http://"+ enrichment_url + "/pipeline/analysis/enrichment"  
 
@@ -107,17 +107,4 @@ def inlist(substring_list, query):
     return any(substring in query for substring in substring_list)
     
 
-def main():
-    """
-    Use for testing this file.
-    """
-    correction = "BONFERRONI"
-    genelist_str = "Ssb,Eny2,Hsp90b1,Ube3a,Cry1,Prkaa1"
-    pvalim = 1
-    species = 'mouse'
-    for vals in get_tgm_data(genelist_str,immune=True, species=species, useSymbol="true",pvalim=pvalim,cormeth=correction):
-        print "\t".join(vals)
-        
-
-if __name__ == '__main__':
-    main()
+# Test code moved to tests/ directory
