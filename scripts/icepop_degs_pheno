@@ -21,11 +21,8 @@ import csv
 import json
 import argparse
 import pandas as pd
-import sys  
+import sys
 import os
-# To be removed later
-# sys.path.insert(0,"/Users/ewijaya-macmini-ifrec/Various_Projects/CellPopulation_Framework_in_making/icepop")
-sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
 from icepop import draw_cellpop as dc
 from icepop import input_reader as ir
 from icepop import cellpop_score as cp
@@ -129,7 +126,7 @@ def main():
     merged_pheno_table_df = merged_pheno_table_df[ncolnames]
 
     if outfile == "stdout":
-        print merged_pheno_table_df
+        print(merged_pheno_table_df)
     elif suff == "xlsx" or suff == "xls":
         sys.stderr.write("Process completed with the following output file: "     +  outfile +  "\n")    
         merged_pheno_table_df.to_excel(outfile,index=False,float_format='%.3f')
@@ -143,7 +140,7 @@ def main():
         sys.stderr.write("No output is created.\n")
         sys.stderr.write("Please use one of these suffixes in the output file name:  tsv, csv, xlsx, xls.\n")
     else:
-        print merged_pheno_table_df
+        print(merged_pheno_table_df)
 
 
 

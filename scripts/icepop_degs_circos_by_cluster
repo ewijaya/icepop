@@ -20,8 +20,6 @@ import numpy as np
 import shutil
 from operator import itemgetter
 from collections import defaultdict
-# To be removed later
-sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
 
 from icepop import targetmine_query_urllib as tgm
 from icepop import enumerate_output as eo
@@ -240,7 +238,7 @@ def main():
             # celltype from line 134
             for ctype in celltypes:
                 clidzscdict = outdict[ctype]
-                for clid, zscore in clidzscdict.iteritems():
+                for clid, zscore in clidzscdict.items():
                     i = int(clid) - 1
                     tiles_stend = tiles_dict[sample][ctype]
                     tiles_st, tiles_en = tiles_stend.split(" ")
@@ -269,15 +267,15 @@ def main():
     # print json.dumps(sample_clid_genelist, indent=4)
     term_sample_clid = defaultdict(list)
     sample_termlist = defaultdict(list)
-    for sample, clidgenes_dict in sample_clid_genelist.iteritems():
-        for cli,genelist in clidgenes_dict.iteritems():
+    for sample, clidgenes_dict in sample_clid_genelist.items():
+        for cli, genelist in clidgenes_dict.items():
             genelist_str = ",".join(genelist) 
             for vals in tgm.get_tgm_data(genelist_str,immune=True, species=species, useSymbol="true",pvalim=pvalim,cormeth=cormeth):
                 theme, term, pval, _ = vals
                 scid = sample + " " + str(cli)
                 term_sample_clid[term].append(scid)
-                sample_termlist[scid].append([term,float(pval)])
-                print sample, "\t",  cli, "\t".join(vals)
+                sample_termlist[scid].append([term, float(pval)])
+                print(sample, "\t",  cli, "\t".join(vals))
                 # print sample, "\t",  cli, "\t".join(vals)
                 
 
@@ -288,7 +286,7 @@ def main():
     go_text_pos_dict = defaultdict(list)
 
     with open(go_text_file, 'w') as file:
-        for term, samplcidlist in term_sample_clid.iteritems():
+        for term, samplcidlist in term_sample_clid.items():
             nofsamples = len(samplcidlist)
             if nofsamples > 1:
                 for sple in samplcidlist:
@@ -333,11 +331,11 @@ def main():
 
     done2 = {}
     with open(go_links_file, 'w') as file2:
-        for bterm, poslist in go_text_pos_dict.iteritems():
+        for bterm, poslist in go_text_pos_dict.items():
             for pl1 in poslist:
                 spl1 = pl1.split("\t")[0]
 
-                for bterm2, poslist2 in go_text_pos_dict.iteritems():
+                for bterm2, poslist2 in go_text_pos_dict.items():
                     for pl2 in poslist2:
                         spl2 = pl2.split("\t")[0]
 
