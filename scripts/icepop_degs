@@ -20,6 +20,7 @@ from icepop import cellpop_score as cp
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo
 from icepop import utils
+from icepop import constants as const
 
 
 def float_or_str(value):
@@ -62,7 +63,7 @@ def main():
         tmp_fnames = os.path.basename(outfile)
         base, suff = tmp_fnames.split(".")
 
-    foldchange_range=[1.5,2,2.5,3,3.5,4,4.5,5]
+    foldchange_range = const.DEFAULT_FOLD_CHANGE_RANGE
     fcstr = [str(x) for x in foldchange_range]
     fcstr = ",".join(fcstr)
 

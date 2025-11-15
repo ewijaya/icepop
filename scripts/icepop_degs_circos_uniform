@@ -25,8 +25,9 @@ from icepop import cellpop_score as cp
 from icepop import targetmine_query_urllib as tgm
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo
-from icepop import utils 
+from icepop import utils
 from icepop import targetmine_query_urllib as tgm
+from icepop import constants as const
 
 def float_or_str(value):
     try:
@@ -172,7 +173,7 @@ def main():
 
 
     # Desired Circos radius.
-    circle_radius = 10000
+    circle_radius = const.DEFAULT_CIRCOS_RADIUS
 
 
 
@@ -313,37 +314,8 @@ def main():
 
     # print sample_ct_generank_dict
     # print cpop_score_df
-    ctype_rgbcolor_dict = {
-                "Bcells" : "(23,190,207)",
-                "DendriticCells": "(188,189,34)",
-                "Macrophages" :"(127,127,127)", 
-                "Macrophage" :"(127,127,127)", 
-                "Monocytes":"(207,236,249)", 
-                "Monocyte":"(207,236,249)", 
-                "NKCells":"(140,86,75)", 
-                "Neutrophil":"(148,103,189)", 
-                "Neutrophils":"(148,103,189)", 
-                "StemCells":"(214,39,40)", 
-                "TCells":"(214,39,40)", 
-                "StromalCells":"(44,160,44)", 
-                "abTcells":"(255,127,14)", 
-                "gdTCells":"(31,119,180)"}
-
-    ctype_abbrev = {
-                "Bcells" : "B",
-                "DendriticCells": "DC",
-                "Macrophages" : "Mac",
-                "Macrophage" : "Mac",
-                "Monocytes": "Mo",
-                "Monocyte": "Mo",
-                "NKCells": "NK",
-                "Neutrophil": "Neu",
-                "Neutrophils": "Neu",
-                "StemCells": "Stem",
-                "StromalCells": "Stro",
-                "TCells": "T",
-                "abTcells": "abT",
-                "gdTCells": "gdT"}
+    ctype_rgbcolor_dict = const.CELLTYPE_RGB_COLORS
+    ctype_abbrev = const.CELLTYPE_ABBREVIATIONS
 
     sample_ct_tile_stend_dict = defaultdict(dict)
     with open(celltype_text_file, 'w') as file,\

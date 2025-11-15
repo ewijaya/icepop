@@ -25,7 +25,8 @@ from icepop import targetmine_query_urllib as tgm
 from icepop import enumerate_output as eo
 from icepop import cluster_cellpop_score as ccp
 from icepop import species_cell_proportion as scp
-from icepop import utils 
+from icepop import utils
+from icepop import constants as const 
 
 
 def main():
@@ -84,7 +85,7 @@ def main():
 
 
     # Desired Circos radius.
-    circle_radius = 10000
+    circle_radius = const.DEFAULT_CIRCOS_RADIUS
     
     # Read input file
     df       = pd.io.parsers.read_table(deg_infile)
@@ -141,16 +142,16 @@ def main():
     nof_celltype  = len(celltypes)
 
     #--------------------------------------------------
-    #  Make cell type text and tiles 
-    #-------------------------------------------------- 
+    #  Make cell type text and tiles
+    #--------------------------------------------------
     celltype_text_file = circos_data_dir + "/celltype_text.txt"
     celltype_tile_file = circos_data_dir + "/celltype_tiles.txt"
-    
 
-    celltype_tile_length = (circle_radius / len(samples) ) / len(celltypes)
-    chunk = celltype_tile_length 
-    chunk_list  = [ chunk ] * len(celltypes)
-    breaks_list  = [ chunk ] * len(celltypes)
+
+    celltype_tile_length = (circle_radius / len(samples)) / len(celltypes)
+    chunk = celltype_tile_length
+    chunk_list  = [chunk] * len(celltypes)
+    breaks_list  = [chunk] * len(celltypes)
 
     # Get interval list
     remlist = []
@@ -160,22 +161,12 @@ def main():
         remlen = sum(remain)
         remlist.append(remlen)
         #print chunk_list[i], remain
-        
+
     remlist.reverse()
-    remlist.insert(0,1)
+    remlist.insert(0, 1)
     intervals = remlist
 
-    ctype_abbrev = {
-            "Bcells" : "B",
-            "DendriticCells": "DC",
-            "Macrophages" : "Mac",
-            "Monocytes": "Mo",
-            "NKCells": "NK",
-            "Neutrophils": "Neu",
-            "StemCells": "Stem",
-            "StromalCells": "Stro",
-            "abTcells": "abT",
-            "gdTCells": "gdT"}
+    ctype_abbrev = const.CELLTYPE_ABBREVIATIONS
 
 
     # Text

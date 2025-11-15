@@ -14,6 +14,7 @@ import os
 from icepop import input_reader as ir
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo
+from icepop import constants as const
 
 
 def main():
@@ -45,10 +46,10 @@ def main():
 
     # These two has no effect
     # But needed cause it uses function that takes that as parameter.
-    gene_count = True    
+    gene_count = True
     logscale   = False
 
-    foldchange_range=[1.5,2,2.5,3,3.5,4,4.5,5]
+    foldchange_range = const.DEFAULT_FOLD_CHANGE_RANGE
     fcstr = [str(x) for x in foldchange_range]
     fcstr = ",".join(fcstr)
 

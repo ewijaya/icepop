@@ -83,3 +83,53 @@ DEFAULT_SKIPROWS = [2]
 
 # Column names for standard DEG input
 DEG_COLUMN_NAMES = ["probe", "Genes"]
+
+# ============================================================================
+# Circos Visualization Constants
+# ============================================================================
+
+# Default circle radius for Circos plots
+DEFAULT_CIRCOS_RADIUS = 10000
+
+# Cell type RGB color mapping for Circos visualizations
+CELLTYPE_RGB_COLORS = {
+    "Bcells": "(23,190,207)",
+    "DendriticCells": "(188,189,34)",
+    "Macrophages": "(127,127,127)",
+    "Macrophage": "(127,127,127)",
+    "Monocytes": "(207,236,249)",
+    "Monocyte": "(207,236,249)",
+    "NKCells": "(140,86,75)",
+    "Neutrophil": "(148,103,189)",
+    "Neutrophils": "(148,103,189)",
+    "StemCells": "(214,39,40)",
+    "TCells": "(214,39,40)",
+    "StromalCells": "(44,160,44)",
+    "abTcells": "(255,127,14)",
+    "gdTCells": "(31,119,180)"
+}
+
+# Cell type abbreviations for Circos labels
+CELLTYPE_ABBREVIATIONS = {
+    "Bcells": "B",
+    "DendriticCells": "DC",
+    "Macrophages": "Mac",
+    "Macrophage": "Mac",
+    "Monocytes": "Mo",
+    "Monocyte": "Mo",
+    "NKCells": "NK",
+    "Neutrophil": "Neu",
+    "Neutrophils": "Neu",
+    "StemCells": "Stem",
+    "StromalCells": "Stro",
+    "TCells": "T",
+    "abTcells": "abT",
+    "gdTCells": "gdT"
+}
+
+# ============================================================================
+# Fold Change Analysis Constants
+# ============================================================================
+
+# Default fold change range for enumeration
+DEFAULT_FOLD_CHANGE_RANGE = [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]

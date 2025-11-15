@@ -81,17 +81,7 @@ def main():
         sys.exit("Human has no organs based proportion data.")
         
 
-    indf = ir.read_file(raw_infile,mode="RAW")
-    
-    # marker_df = None
-    # if specif == 'best':
-    #     marker_df = sp.find_best_marker_genes(cellpop_df,verbose=False)
-    # else:
-    #     marker_df = sp.find_marker_genes(cellpop_df,lim=specif)
-
-    # marker_df = sp.find_topk_marker_genes(cellpop_df,to_exclude=None, top_k=3)
-    # marker_df = sp.find_topk_marker_genes(cellpop_df,to_exclude=["gdTCells"],top_k=3)
-    # marker_df = sp.find_topk_marker_genes(cellpop_df,to_exclude=["abTcells"],top_k=3)
+    indf = ir.read_file(raw_infile, mode="RAW")
 
     for i in range(10):
         top = i + 1
@@ -115,29 +105,6 @@ def main():
         print("TOP_" + str(top))
         print(merged_df)
         print("---")
-
-    # base, suff = None, None
-    # if "." in outfile:
-    #     tmp_fnames = os.path.basename(outfile)
-    #     base, suff = tmp_fnames.split(".")
-        
-    
-    # if suff == "json":
-    #     merged_df_json = data_conversion.df_to_dol(merged_df)
-    #     with open(outfile,'w') as jsonout:
-    #         json.dump(merged_df_json, jsonout, indent=4)
-    # elif suff == "tsv":
-    #     merged_df.index.names = ['Cell_type']
-    #     merged_df.reset_index(inplace=True)
-    #     merged_df.to_csv(outfile,sep="\t",index=False,float_format='%.3f')
-    # elif suff == "xlsx" or  suff == 'xls':
-    #     merged_df.index.names = ['Cell_type']
-    #     merged_df.reset_index(inplace=True)
-    #     merged_df.to_excel(outfile,index=False,float_format='%.3f')
-    # elif suff in ['svg','jpg','png']:
-    #     dw.pieplot_deconv(merged_df, nrows=3,ncols=4,outfile=outfile)
-    # elif outfile == 'stdout':
-    #     print  merged_df
 
 
 if __name__ == '__main__':
