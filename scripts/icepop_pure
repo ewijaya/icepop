@@ -10,11 +10,9 @@ import json
 import argparse
 import sys  
 import os
-import pandas as pd 
+import pandas as pd
 from openpyxl import load_workbook
-
-# To be removed later
-sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+from functools import reduce
 
 from icepop import input_reader as ir
 from icepop import species_cell_proportion as scp
@@ -114,7 +112,7 @@ def main():
     elif suff in ['svg','jpg','png']:
         dw.pieplot_deconv(merged_df, nrows=3,ncols=4,outfile=outfile)
     elif outfile == 'stdout':
-        print  merged_df
+        print(merged_df)
 
 
 if __name__ == '__main__':

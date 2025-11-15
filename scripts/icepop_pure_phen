@@ -22,10 +22,8 @@ import json
 import argparse
 import sys  
 import os
-import pandas as pd 
-
-# To be removed later
-sys.path.insert(0,'/misc/u21/ewijaya/cellpopulation_framework/icepop')
+import pandas as pd
+from functools import reduce
 
 from icepop import input_reader as ir
 from icepop import species_cell_proportion as scp
@@ -126,9 +124,9 @@ def main():
     if "." in outfile:
         tmp_fnames = os.path.basename(outfile)
         base, suff = tmp_fnames.split(".")
-        
 
-    print merged_df
+
+    print(merged_df)
     
     if suff == "json":
         merged_df_json = data_conversion.df_to_dol(merged_df)
@@ -145,7 +143,7 @@ def main():
     elif suff in ['svg','jpg','png']:
         dw.pieplot_deconv(merged_df, nrows=3,ncols=4,outfile=outfile)
     elif outfile == 'stdout':
-        print  merged_df
+        print(merged_df)
 
 
 if __name__ == '__main__':

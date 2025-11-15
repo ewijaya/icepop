@@ -11,17 +11,16 @@ import csv
 import json
 import argparse
 import pandas as pd
-import sys  
+import sys
 import os
-# To be removed later
-# sys.path.insert(0,"/Users/ewijaya-macmini-ifrec/Various_Projects/CellPopulation_Framework_in_making/icepop")
-sys.path.insert(0,'/Users/ewijaya/Various_projects/cellpopulation_framework/icepop')
+from functools import reduce
 from icepop import draw_cellpop as dc
 from icepop import input_reader as ir
 from icepop import cellpop_score as cp
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo
 from icepop import utils
+from icepop import constants as const
 
 
 def float_or_str(value):
@@ -64,7 +63,7 @@ def main():
         tmp_fnames = os.path.basename(outfile)
         base, suff = tmp_fnames.split(".")
 
-    foldchange_range=[1.5,2,2.5,3,3.5,4,4.5,5]
+    foldchange_range = const.DEFAULT_FOLD_CHANGE_RANGE
     fcstr = [str(x) for x in foldchange_range]
     fcstr = ",".join(fcstr)
 
@@ -103,7 +102,7 @@ def main():
     # print indf.head()
 
     if fc_lim == 'none' and suff == 'json':
-        print foldchange_range
+        print(foldchange_range)
         # This full enumeration is mainly used for web app
         eo.enumerate_output(cellpop_df, indf, fc_range = foldchange_range, \
                             outfilename = outfile,  gene_count=gene_count, \
@@ -148,7 +147,7 @@ def main():
         elif suff == "xlsx" or  suff == 'xls':
             ncpop_score_df.to_excel(outfile,index=False,float_format='%.3f')
         elif outfile == 'stdout':
-            print  ncpop_score_df
+            print(ncpop_score_df)
         elif suff not in sufflist:
             sys.stderr.write("No output is created.\n")
             sys.stderr.write("Please use one of these suffixes in the output file name: svg, jpg, png, tsv, xlsx, xls.\n")

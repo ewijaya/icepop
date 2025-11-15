@@ -13,21 +13,21 @@ import csv
 import json
 import argparse
 import re
-import sys  
+import sys
 import shutil
 import numpy as np
 from collections import defaultdict
 import os
 import pandas as pd
-# To be removed later
-sys.path.insert(0,'/Users/ewijaya/Various_projects/cellpopulation_framework/icepop')
+from functools import reduce
 from icepop import input_reader as ir
 from icepop import cellpop_score as cp
 from icepop import targetmine_query_urllib as tgm
 from icepop import species_cell_proportion as scp
 from icepop import enumerate_output as eo
-from icepop import utils 
+from icepop import utils
 from icepop import targetmine_query_urllib as tgm
+from icepop import constants as const
 
 def float_or_str(value):
     try:
@@ -129,7 +129,7 @@ def main():
         allnindf.append(new_indf)
 
         
-    merged_nindf = reduce(lambda ldf, rdf: pd.merge(ldf,rdf, on=prgenes, how='outer'), allnindf).fillna(0)
+    merged_nindf = reduce(lambda ldf, rdf: pd.merge(ldf, rdf, on=prgenes, how='outer'), allnindf).fillna(0)
     indf = merged_nindf
 
     #--------------------------------------------------
@@ -173,7 +173,7 @@ def main():
 
 
     # Desired Circos radius.
-    circle_radius = 10000
+    circle_radius = const.DEFAULT_CIRCOS_RADIUS
 
 
 
@@ -182,14 +182,14 @@ def main():
     # This is not shown in circos (yet), but as text file
     #--------------------------------------------------
 
-    print circos_dir
+    print(circos_dir)
     targetmine_file = circos_dir + "/targetmine.json"
 
     if go:
         all_gos = []
         done_term = {}
-        for go_smpl, go_ctgl in sel_aoshi_gene_dict.iteritems():
-            for go_ct, go_gl in go_ctgl.iteritems():
+        for go_smpl, go_ctgl in sel_aoshi_gene_dict.items():
+            for go_ct, go_gl in go_ctgl.items():
                 genelist_str =  ",".join(go_gl)
                 for vals in tgm.get_tgm_data(genelist_str,immune=True, species=species, \
                         useSymbol="true",pvalim=0.5,cormeth='HOLM_BONFERRONI'):
@@ -252,7 +252,7 @@ def main():
         if kar_sample in sel_aoshi_gene_dict:
             kar_samp_ct_dict = sel_aoshi_gene_dict[kar_sample]
             sample_genes = []
-            for kar_ct, kar_ct_genes in kar_samp_ct_dict.iteritems():
+            for kar_ct, kar_ct_genes in kar_samp_ct_dict.items():
 
                 # The count must be for the cell type that
                 # already pass the threshold
@@ -270,12 +270,12 @@ def main():
 
     allkar_weight_dict = {}
     allkar_ct_weight_dict = defaultdict(dict)
-    for ksmp, kcount in allkar_gene_count_dict.iteritems():
+    for ksmp, kcount in allkar_gene_count_dict.items():
         ksmp_weight = kcount / (total_allkar_gene_count + 0.000)
         allkar_weight_dict[ksmp] = ksmp_weight
 
         ctcount_dict = allkar_ct_gene_count_dict[ksmp]
-        for ctname, ctgcount in ctcount_dict.iteritems():
+        for ctname, ctgcount in ctcount_dict.items():
             ksmp_ct_weight = ctgcount / (total_allkar_gene_count + 0.000)
             allkar_ct_weight_dict[ksmp][ctname] =  ksmp_ct_weight
             
@@ -314,50 +314,21 @@ def main():
 
     # print sample_ct_generank_dict
     # print cpop_score_df
-    ctype_rgbcolor_dict = {
-                "Bcells" : "(23,190,207)",
-                "DendriticCells": "(188,189,34)",
-                "Macrophages" :"(127,127,127)", 
-                "Macrophage" :"(127,127,127)", 
-                "Monocytes":"(207,236,249)", 
-                "Monocyte":"(207,236,249)", 
-                "NKCells":"(140,86,75)", 
-                "Neutrophil":"(148,103,189)", 
-                "Neutrophils":"(148,103,189)", 
-                "StemCells":"(214,39,40)", 
-                "TCells":"(214,39,40)", 
-                "StromalCells":"(44,160,44)", 
-                "abTcells":"(255,127,14)", 
-                "gdTCells":"(31,119,180)"}
-
-    ctype_abbrev = {
-                "Bcells" : "B",
-                "DendriticCells": "DC",
-                "Macrophages" : "Mac",
-                "Macrophage" : "Mac",
-                "Monocytes": "Mo",
-                "Monocyte": "Mo",
-                "NKCells": "NK",
-                "Neutrophil": "Neu",
-                "Neutrophils": "Neu",
-                "StemCells": "Stem",
-                "StromalCells": "Stro",
-                "TCells": "T",
-                "abTcells": "abT",
-                "gdTCells": "gdT"}
+    ctype_rgbcolor_dict = const.CELLTYPE_RGB_COLORS
+    ctype_abbrev = const.CELLTYPE_ABBREVIATIONS
 
     sample_ct_tile_stend_dict = defaultdict(dict)
     with open(celltype_text_file, 'w') as file,\
             open(celltype_tile_file, 'w') as file_cttile:
         # print json.dumps(allkar_weight_dict, indent=4)
-        for insample,ctgenecount_dict in allkar_ct_gene_count_dict.iteritems():
+        for insample, ctgenecount_dict in allkar_ct_gene_count_dict.items():
             chunk_list = []
             breaks_list = []
             sel_celltypes_filtered = []
-            for ct, nof_genes in ctgenecount_dict.iteritems():
-                weight = allkar_ct_weight_dict[insample][ct] 
+            for ct, nof_genes in ctgenecount_dict.items():
+                weight = allkar_ct_weight_dict[insample][ct]
                 chunk  = np.round(weight * circle_radius)
-                print insample, ct, nof_genes, chunk
+                print(insample, ct, nof_genes, chunk)
                 sel_celltypes_filtered.append(ct)
                 chunk_list.append(chunk)
                 breaks_list.append(chunk)
@@ -438,16 +409,16 @@ def main():
     sample_ctype_ovlp_genes_link = defaultdict(lambda: defaultdict(list))
     sample_ctype_ovlp_genes      = defaultdict(list)
     sample_ctype_allgenes = defaultdict(lambda: defaultdict(list))
-    
-    for insample1,ctgenelist1 in allkar_ct_gene_list_dict.iteritems():
-        sel_celltypes1 = sel_aoshi_gene_dict[insample1].keys()
+
+    for insample1, ctgenelist1 in allkar_ct_gene_list_dict.items():
+        sel_celltypes1 = list(sel_aoshi_gene_dict[insample1].keys())
         for sctype1 in sel_celltypes1:
             if sctype1 not in sample_ct_tile_stend_dict[insample1]: continue
                 
             gene_list1 = sel_aoshi_gene_dict[insample1][sctype1]
 
-            for insample2,ctgenelist2 in allkar_ct_gene_list_dict.iteritems():
-                sel_celltypes2 = sel_aoshi_gene_dict[insample2].keys()
+            for insample2, ctgenelist2 in allkar_ct_gene_list_dict.items():
+                sel_celltypes2 = list(sel_aoshi_gene_dict[insample2].keys())
                 for sctype2 in sel_celltypes2:
                     if sctype2 not in sample_ct_tile_stend_dict[insample2]: continue
                     gene_list2      = sel_aoshi_gene_dict[insample2][sctype2]
